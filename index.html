@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Smart Box V4</title>
+    <title>Smart Box V4.1 (Fix)</title>
     
     <!-- ライブラリ -->
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
@@ -79,7 +79,7 @@
 <body>
 
 <header>
-    <h1>📦 Smart Box V4</h1>
+    <h1>📦 Smart Box V4.1</h1>
     <span id="status-badge" style="font-size:0.8rem; background:rgba(255,255,255,0.2); padding:2px 8px; border-radius:4px;">Ready</span>
 </header>
 
@@ -216,7 +216,7 @@
 
 <script>
     // ▼▼▼ GASのURLを貼り付け ▼▼▼
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbw_nQ2FQZD0G2YE8GRjGIDpRuOGCuZ6wyHSLo29b_25KIQNlM7Gv58aFvZVcGCDcWQU6w/exec"; 
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbzlI2y972-VVGC9VEoyj7yaxHF_RY5evr4ZvTU6Fa5QvHo_D1iNReMJ8vC6shlp2cC6CQ/exec"; 
     // ▲▲▲ ▲▲▲ ▲▲▲
 
     let localDB = {}; 
@@ -224,13 +224,19 @@
     let qrScanner = null;
     let aiModel = null;
     let audioCtx = null;
+    
+    // カメラの状態管理用
+    let isStopping = false;
 
-    // 初期化
     window.onload = async () => {
         if(GAS_URL.includes("URL")) alert("GASのURLを設定してください！");
         await fetchData();
         initAudio();
         renderList();
+        // 初期状態のスキャン開始
+        if(document.getElementById('view-scan').classList.contains('active')) {
+            setTimeout(startQR, 500);
+        }
     };
 
     function initAudio() {
@@ -247,7 +253,6 @@
         o.start(); o.stop(audioCtx.currentTime+0.1);
     }
 
-    // --- 通信 ---
     async function fetchData(force=false) {
         document.getElementById('status-badge').innerText = "Syncing...";
         try {
@@ -278,27 +283,68 @@
         } catch(e) { return text; }
     }
 
-    // --- タブ切り替え ---
     function switchTab(tab) {
         document.querySelectorAll('.view').forEach(e => e.classList.remove('active'));
         document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
         document.getElementById('view-'+tab).classList.add('active');
         document.querySelectorAll('.nav-item')[['scan','list','settings'].indexOf(tab)].classList.add('active');
-        if(tab==='scan') startQR(); else stopQR();
+        
+        if(tab==='scan') {
+            // 画面切り替え完了を待ってからカメラ起動（重要）
+            setTimeout(startQR, 300);
+        } else {
+            stopQR();
+        }
+        
         if(tab==='list') renderList();
     }
 
-    // --- QR処理 ---
+    // --- QR処理 (修正版) ---
     function startQR() {
-        if(currentBoxId) return;
-        if(!qrScanner) {
-            qrScanner = new Html5Qrcode("reader");
-            qrScanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, 
-            (decoded) => { beep(); openBox(decoded); }).catch(()=>{});
+        if(currentBoxId) return; // 編集中の場合は起動しない
+        if(isStopping) {
+            // 停止処理中の場合は少し待って再試行
+            setTimeout(startQR, 200);
+            return;
         }
+        if(qrScanner) return; // 既に起動中なら何もしない
+
+        // 要素が表示されているか確認
+        const reader = document.getElementById("reader");
+        if (!reader || reader.offsetParent === null) {
+            return; // 非表示なら起動しない
+        }
+
+        const scanner = new Html5Qrcode("reader");
+        scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, 
+            (decoded) => { beep(); openBox(decoded); })
+        .then(() => {
+            qrScanner = scanner;
+        })
+        .catch(err => {
+            console.log("Start failed, retrying...", err);
+            // 起動に失敗した場合（タブ切替の競合など）、少し待って再試行
+            setTimeout(() => {
+                if(!qrScanner && !isStopping && document.getElementById('view-scan').classList.contains('active')) {
+                    startQR();
+                }
+            }, 500);
+        });
     }
+
     function stopQR() {
-        if(qrScanner) qrScanner.stop().then(()=>{ qrScanner.clear(); qrScanner=null; }).catch(()=>{});
+        if(qrScanner) {
+            isStopping = true;
+            qrScanner.stop().then(() => {
+                qrScanner.clear();
+                qrScanner = null;
+                isStopping = false;
+            }).catch(err => {
+                console.log("Stop failed", err);
+                isStopping = false;
+                qrScanner = null; // 強制クリア
+            });
+        }
     }
 
     function openBox(id) {
@@ -347,15 +393,10 @@
         }
     }
 
-    // --- 箱の削除 ---
     async function deleteBox() {
         if(!confirm(`本当に ${currentBoxId} を削除しますか？\n中身のデータも全て消えます。`)) return;
-        
-        // ローカルから削除
         delete localDB[currentBoxId];
-        // サーバーへ削除依頼
         await pushData({ boxId: currentBoxId, action: 'delete' });
-        
         alert("削除しました");
         closeBox();
     }
@@ -370,40 +411,29 @@
         currentBoxId = null;
         document.getElementById('box-ui').style.display = 'none';
         document.getElementById('scan-ui').style.display = 'block';
-        startQR();
+        // 画面切り替え後にカメラ再起動
+        setTimeout(startQR, 300);
     }
 
-    // --- 提案機能 (どこに入れればいい？) ---
     function findSuggestion() {
         const query = document.getElementById('inp-suggest').value.trim();
         const area = document.getElementById('suggestion-area');
         if(!query) return;
 
-        // 簡易マッチングロジック
-        // 1. カテゴリが一致しそうな箱
-        // 2. 似たアイテムが入っている箱
         let candidates = [];
-        
-        // キーワードによる簡易カテゴリ推定
         let targetCat = "";
         if(query.match(/マウス|キーボード|PC|USB/i)) targetCat = "PC・ガジェット";
-        else if(query.match(/服|コート/)) targetCat = "衣類";
-        // ... (GAS側と同じロジックをJSでも持つとベターだが、今回は既存箱のカテゴリを頼る)
+        else if(query.match(/服|コート/)) targetCat = "衣類・ファッション";
 
         Object.keys(localDB).forEach(id => {
             const box = localDB[id];
             let score = 0;
-            // 同じカテゴリなら+10
             if(box.category === targetCat) score += 10;
             if(targetCat === "" && box.category !== "未分類" && box.category !== "その他") {
-                 // ターゲットカテゴリ不明でも、箱のカテゴリ名と入力が一致したら+10 (例: "ケーブル" という箱カテゴリ)
                  if(box.category.includes(query)) score += 10;
             }
-
-            // 中身に部分一致するアイテムがあれば+5
             const hasSimilar = box.items.some(item => item.includes(query) || query.includes(item));
             if(hasSimilar) score += 5;
-
             if(score > 0) candidates.push({ id, loc: box.loc, cat: box.category, score });
         });
 
@@ -416,11 +446,10 @@
             ).join("<br>");
         } else {
             area.style.display = "block";
-            area.innerHTML = "💡一致する箱が見つかりませんでした。新しい箱に入れるか、近いカテゴリの箱を探してください。";
+            area.innerHTML = "💡一致する箱が見つかりませんでした。";
         }
     }
 
-    // --- 一覧 & 閲覧モード ---
     function renderList() {
         const k = document.getElementById('filter-input').value.toLowerCase();
         const c = document.getElementById('list-container');
@@ -431,9 +460,7 @@
             if(`${id} ${d.loc} ${d.items.join(' ')}`.toLowerCase().includes(k)) {
                 const div = document.createElement('div');
                 div.className = 'box-row';
-                // 一覧では中身を省略してスッキリさせる
                 const summary = d.items.length > 0 ? `${d.items[0]} 他${d.items.length-1}点` : "空";
-                
                 div.innerHTML = `
                     <div>
                         <div style="font-weight:bold; color:var(--primary);">${id} <span class="box-tag">${d.category||'未'}</span></div>
@@ -441,7 +468,6 @@
                     </div>
                     <div style="font-size:0.9rem; color:#333;">${summary}</div>
                 `;
-                // クリックしたら詳細閲覧モーダルへ (直接編集ではない)
                 div.onclick = () => showDetailModal(id);
                 c.appendChild(div);
             }
@@ -453,21 +479,16 @@
         document.getElementById('modal-id').innerText = id;
         document.getElementById('modal-cat').innerText = d.category || "未分類";
         document.getElementById('modal-loc').innerText = "保管場所: " + (d.loc || "未設定");
-        
         const ul = document.getElementById('modal-items');
         ul.innerHTML = "";
         if(d.items.length === 0) {
             ul.innerHTML = "<li style='color:#999'>中身はありません</li>";
         } else {
             d.items.forEach(item => {
-                const li = document.createElement('li');
-                li.innerText = item;
-                ul.appendChild(li);
+                const li = document.createElement('li'); li.innerText = item; ul.appendChild(li);
             });
         }
-        
-        // 編集ボタン用にIDを記憶
-        currentBoxId = id; // ここでは仮置き
+        currentBoxId = id;
         document.getElementById('detail-modal').style.display = "flex";
     }
 
@@ -480,18 +501,14 @@
 
     function editFromModal() {
         document.getElementById('detail-modal').style.display = "none";
-        // 編集タブへ移動して開く
         switchTab('scan');
         openBox(currentBoxId);
     }
 
-
-    // --- モード系 (通常/高速/音声のみ) ---
     let normalStream=null, fastStream=null, recognition=null;
     let lastVoiceT=0, lastSpoken="";
     let isVoiceOnly = false;
 
-    // 通常カメラ
     async function startNormalCamera() {
         if(!aiModel) aiModel = await mobilenet.load();
         document.getElementById('normal-camera-area').style.display = 'block';
@@ -523,7 +540,6 @@
         document.getElementById('normal-camera-area').style.display = 'none';
     }
 
-    // 高速 & 音声のみモード共通
     async function startFastMode(voiceOnly = false) {
         isVoiceOnly = voiceOnly;
         if(!voiceOnly && !aiModel) aiModel = await mobilenet.load();
@@ -534,13 +550,11 @@
         const line = document.getElementById('scan-line');
 
         if(voiceOnly) {
-            // 音声のみ: カメラOFF, アイコン表示
             v.style.display = 'none';
             line.style.display = 'none';
             icon.style.display = 'block';
             document.getElementById('fast-log').innerText = "音声のみ: 待機中...";
         } else {
-            // 通常高速: カメラON
             v.style.display = 'block';
             line.style.display = 'block';
             icon.style.display = 'none';
@@ -564,9 +578,7 @@
         }
     }
 
-    function startVoiceOnlyMode() {
-        startFastMode(true);
-    }
+    function startVoiceOnlyMode() { startFastMode(true); }
 
     async function loopFastAI() {
         if(document.getElementById('fast-mode-ui').style.display==='none' || isVoiceOnly) return;
@@ -600,7 +612,6 @@
         saveBox(); renderBoxEdit();
     }
 
-    // --- 印刷 ---
     function printCurrentBoxQR() {
         const area = document.getElementById('print-area');
         area.className = 'mode-single';
