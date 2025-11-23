@@ -2,640 +2,618 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Smart Box V4.1 (Fix)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Smart Box V6 Ultimate</title>
     
-    <!-- ライブラリ -->
+    <!-- 必要なライブラリ -->
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@latest"></script>
 
     <style>
-        :root { --primary: #2563eb; --accent: #f59e0b; --danger: #ef4444; --bg: #f3f4f6; --text: #1f2937; }
-        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; margin: 0; padding: 0; background: var(--bg); color: var(--text); padding-bottom: 90px; user-select: none; }
+        :root { 
+            --primary: #4f46e5; 
+            --primary-dark: #4338ca;
+            --accent: #f59e0b; 
+            --danger: #ef4444; 
+            --success: #10b981;
+            --bg: #f8fafc; 
+            --text: #1e293b;
+            --card-bg: #ffffff;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 0; background: var(--bg); color: var(--text); padding-bottom: 110px; -webkit-tap-highlight-color: transparent; }
         
-        header { background: var(--primary); color: white; padding: 15px; position: sticky; top: 0; z-index: 100; display:flex; justify-content:space-between; align-items:center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        h1 { margin: 0; font-size: 1.1rem; font-weight: 700; }
+        /* ログイン画面 */
+        #login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--primary); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; }
+        #login-screen input { width: 200px; text-align: center; font-size: 1.5rem; letter-spacing: 5px; margin: 20px 0; border: none; }
         
+        /* ヘッダー */
+        .header { background: var(--primary); color: white; padding: 15px 20px; position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        h1 { margin: 0; font-size: 1.2rem; font-weight: 800; }
+        .status-badge { font-size: 0.75rem; background: rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 20px; font-weight: bold; }
+
+        /* コンテナ */
         .container { max-width: 600px; margin: 0 auto; padding: 15px; }
-        .card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.03); }
+        .card { background: var(--card-bg); border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
         
-        input, select { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #e5e7eb; border-radius: 8px; background: #f9fafb; box-sizing: border-box; font-size: 1rem; }
+        /* フォーム */
+        input, select { width: 100%; padding: 14px; margin-bottom: 12px; border: 1px solid #cbd5e1; border-radius: 12px; background: #f1f5f9; box-sizing: border-box; font-size: 1rem; }
+        input:focus { border-color: var(--primary); outline: none; background: white; }
         
-        button { width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; font-size: 0.95rem; margin-bottom: 8px; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        button.primary { background: var(--primary); color: white; }
-        button.accent { background: var(--accent); color: white; }
-        button.secondary { background: #e5e7eb; color: #4b5563; }
-        button.danger { background: var(--danger); color: white; }
-        button.icon-btn { width: auto; padding: 8px 12px; font-size: 1.2rem; background: transparent; color: var(--primary); border: 1px solid var(--primary); margin: 0; }
-        button:active { transform: scale(0.98); opacity: 0.9; }
+        /* ボタン */
+        button { width: 100%; padding: 14px; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 0.95rem; margin-bottom: 8px; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; }
+        button:active { transform: scale(0.97); }
+        .btn-p { background: var(--primary); color: white; }
+        .btn-s { background: #e2e8f0; color: #475569; }
+        .btn-d { background: #fee2e2; color: var(--danger); }
+        .btn-a { background: var(--accent); color: white; }
+        .btn-g { background: var(--success); color: white; }
+        .btn-icon { width: 44px; height: 44px; padding: 0; border-radius: 50%; font-size: 1.2rem; margin: 0; }
+        .btn-sm { padding: 6px 12px; font-size: 0.8rem; width: auto; margin: 0; height: 32px; }
 
-        /* タブ切替 */
-        .view { display: none; animation: fadeIn 0.2s; }
-        .view.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        /* リストスタイル */
+        .item-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f1f5f9; flex-wrap: wrap; gap: 10px; }
+        .item-info { flex: 1; }
+        .item-name { font-weight: bold; font-size: 1rem; color: #334155; }
+        .tag { color: var(--primary); background: #e0e7ff; padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; margin-left: 5px; }
         
-        .nav { position: fixed; bottom: 0; left: 0; width: 100%; background: white; border-top: 1px solid #e5e7eb; display: flex; padding-bottom: env(safe-area-inset-bottom); z-index: 1000; }
-        .nav-item { flex: 1; text-align: center; padding: 10px 0; color: #9ca3af; font-size: 0.7rem; cursor: pointer; }
-        .nav-item.active { color: var(--primary); font-weight: bold; }
-        .nav-icon { font-size: 1.4rem; display: block; margin-bottom: 2px; }
+        /* カウンター */
+        .counter-ui { display: flex; align-items: center; gap: 8px; background: #f8fafc; padding: 4px; border-radius: 8px; border: 1px solid #e2e8f0; }
+        .counter-val { font-weight: bold; min-width: 24px; text-align: center; }
 
-        /* リスト・詳細系 */
-        .item-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f3f4f6; }
-        .num-circle { display: inline-flex; width: 22px; height: 22px; background: var(--primary); color: white; border-radius: 50%; font-size: 0.75rem; align-items: center; justify-content: center; margin-right: 8px; }
+        /* ボックス一覧 */
+        .box-row { padding: 16px; border-bottom: 1px solid #f1f5f9; cursor: pointer; transition: background 0.2s; position: relative; }
+        .box-row:active { background: #f1f5f9; }
+        .box-badge { background: #e0e7ff; color: var(--primary); padding: 3px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; }
+        .alert-badge { background: #fee2e2; color: #b91c1c; padding: 3px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; display: none; }
+        .alert-badge.show { display: inline-block; margin-left: 5px; }
+
+        /* 検索ハイライト */
+        .hl { background: #fef08a; padding: 0 2px; border-radius: 2px; }
+
+        /* 提案・関連 */
+        .related-box { background: #fff7ed; border: 1px solid #ffedd5; padding: 12px; border-radius: 12px; margin-top: 15px; display: none; }
+        .related-title { font-size: 0.85rem; color: #c2410c; font-weight: bold; margin-bottom: 5px; }
+        .related-item { font-size: 0.9rem; color: #9a3412; margin-bottom: 4px; cursor: pointer; text-decoration: underline; }
+
+        /* モーダル */
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; display: none; justify-content: center; align-items: flex-end; backdrop-filter: blur(4px); }
+        .modal-content { background: white; width: 100%; max-width: 600px; border-radius: 24px 24px 0 0; padding: 24px; box-sizing: border-box; max-height: 85vh; overflow-y: auto; animation: slideUp 0.3s; }
+        @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+
+        /* ナビゲーション */
+        .nav { position: fixed; bottom: 0; left: 0; width: 100%; background: white; border-top: 1px solid #e2e8f0; display: flex; padding-bottom: env(safe-area-inset-bottom); z-index: 1000; box-shadow: 0 -4px 20px rgba(0,0,0,0.05); }
+        .nav-item { flex: 1; text-align: center; padding: 12px 0; color: #94a3b8; font-size: 0.7rem; cursor: pointer; transition: 0.2s; }
+        .nav-item.active { color: var(--primary); font-weight: bold; transform: translateY(-2px); }
+        .nav-icon { font-size: 1.5rem; display: block; margin-bottom: 4px; }
         
-        .box-row { padding: 15px; border-bottom: 1px solid #eee; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
-        .box-tag { font-size: 0.75rem; background: #e0f2fe; color: #0284c7; padding: 2px 6px; border-radius: 4px; margin-left: 5px; }
+        .view { display: none; opacity: 0; transition: opacity 0.2s; }
+        .view.active { display: block; opacity: 1; }
 
-        /* モーダル (詳細閲覧用) */
-        #detail-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; display: none; justify-content: center; align-items: flex-end; }
-        .modal-content { background: white; width: 100%; max-width: 600px; border-radius: 15px 15px 0 0; padding: 20px; box-sizing: border-box; max-height: 85vh; overflow-y: auto; animation: slideUp 0.3s; }
-        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-
-        /* 提案ボックス */
-        #suggestion-area { background: #ecfdf5; border: 1px solid #6ee7b7; color: #065f46; padding: 10px; border-radius: 8px; margin-bottom: 15px; display: none; }
-
-        /* 高速/音声モードUI */
+        /* 高速モード */
         #fast-mode-ui { position: fixed; top:0; left:0; width:100%; height:100%; background: #000; z-index: 1500; display:none; flex-direction:column; }
         #fast-video { width: 100%; height: 100%; object-fit: cover; }
-        .fast-overlay { position: absolute; bottom: 0; width: 100%; background: rgba(0,0,0,0.8); padding: 20px; text-align: center; color: white; box-sizing: border-box; }
-        .scan-line { position: absolute; top: 50%; width: 100%; height: 2px; background: cyan; box-shadow: 0 0 10px cyan; }
-        
+        .fast-overlay { position: absolute; bottom: 0; width: 100%; background: linear-gradient(to top, rgba(0,0,0,0.9), transparent); padding: 40px 20px; text-align: center; color: white; box-sizing: border-box; }
+        .scan-line { position: absolute; top: 50%; width: 100%; height: 2px; background: cyan; box-shadow: 0 0 15px cyan; }
+
         /* 印刷 */
         #print-area { display: none; }
         @media print {
             body * { visibility: hidden; }
             #print-area, #print-area * { visibility: visible; }
-            #print-area { position: absolute; top: 0; left: 0; width: 100%; height: 100vh; padding: 10px; box-sizing: border-box; }
-            #print-area.mode-bulk { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(4, 1fr); gap: 15px; }
-            #print-area.mode-single { display: flex; flex-direction: column; justify-content: center; align-items: center; }
-            .print-card { border: 2px solid #000; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; page-break-inside: avoid; border-radius: 8px; }
+            #print-area { position: absolute; top: 0; left: 0; width: 100%; }
+            .print-card { border: 2px solid #000; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; border-radius: 8px; page-break-inside: avoid; }
             .print-id { font-size: 2rem; font-weight: bold; margin-bottom: 10px; }
-            .mode-single .print-id { font-size: 4rem; margin-bottom: 30px; }
+            #print-area.mode-bulk { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(4, 1fr); gap: 15px; height: 100vh; padding: 10px; }
+            #print-area.mode-single { display: flex; justify-content: center; align-items: center; height: 100vh; }
+            .mode-single .print-id { font-size: 4rem; }
         }
     </style>
 </head>
 <body>
 
-<header>
-    <h1>📦 Smart Box V4.1</h1>
-    <span id="status-badge" style="font-size:0.8rem; background:rgba(255,255,255,0.2); padding:2px 8px; border-radius:4px;">Ready</span>
-</header>
+<!-- ログイン画面 -->
+<div id="login-screen">
+    <h1>🔒 Smart Box V6</h1>
+    <p style="opacity:0.8;">Ultimate Edition</p>
+    <div style="margin-top:20px; text-align:center;">
+        <p>Password</p>
+        <input type="password" id="login-pass" placeholder="****" maxlength="8">
+        <button class="btn-s" style="background:white; color:var(--primary); width:200px;" onclick="tryLogin()">UNLOCK</button>
+        <p id="login-msg" style="color:#fecaca; margin-top:10px; font-size:0.9rem;"></p>
+    </div>
+</div>
+
+<div class="header">
+    <h1>📦 Smart Box V6</h1>
+    <span id="sync-status" class="status-badge">Waiting</span>
+</div>
 
 <div class="container">
 
-    <!-- 1. スキャン & 編集 (Edit Mode) -->
+    <!-- 1. スキャン & 編集 -->
     <div id="view-scan" class="view active">
         <div id="scan-ui" class="card">
-            <h3 style="text-align:center; margin:0 0 10px 0;">QRコードをスキャン</h3>
-            <div id="reader" style="border-radius:8px; overflow:hidden; background:#000;"></div>
-            <p style="text-align:center; color:#666; font-size:0.8rem; margin-top:10px;">編集・追加はここから</p>
+            <h3 style="text-align:center; margin:0 0 15px 0;">QRスキャン</h3>
+            <div id="reader" style="border-radius:12px; overflow:hidden; background:black; min-height:250px;"></div>
+            <p style="text-align:center; font-size:0.85rem; color:#64748b; margin-top:15px;">新しい箱、または既存の箱のQRを読み込んでください</p>
         </div>
 
         <div id="box-ui" class="card" style="display:none;">
-            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #eee; padding-bottom:10px; margin-bottom:10px;">
+            <!-- 箱ヘッダー -->
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; padding-bottom:15px; border-bottom:1px solid #e2e8f0; margin-bottom:15px;">
                 <div>
-                    <div id="disp-id" style="font-size:1.4rem; font-weight:900; color:var(--primary);">BOX-ID</div>
-                    <span id="disp-cat" style="font-size:0.8rem; background:#eee; padding:3px 8px; border-radius:4px;">カテゴリ</span>
+                    <div id="disp-id" style="font-size:1.6rem; font-weight:900; color:var(--primary); line-height:1;">BOX-ID</div>
+                    <div style="margin-top:6px; display:flex; gap:6px; align-items:center;">
+                        <span id="disp-cat" class="box-badge">カテゴリ</span>
+                        <span id="disp-alert" class="alert-badge">⚠️ 長期放置</span>
+                    </div>
                 </div>
-                <button class="icon-btn" onclick="printCurrentBoxQR()">🖨️</button>
+                <button class="btn-s btn-icon" onclick="printQR()">🖨️</button>
             </div>
             
-            <input type="text" id="inp-loc" placeholder="保管場所 (例: 2階 クローゼット)" onchange="saveBox()">
+            <label style="font-size:0.85rem; color:#64748b; font-weight:bold;">保管場所</label>
+            <input type="text" id="inp-loc" placeholder="例: 2階 クローゼット" onchange="saveBox()">
             
-            <div style="max-height:200px; overflow-y:auto; margin-bottom:15px; border:1px solid #eee; border-radius:8px; padding:5px;">
-                <div id="item-list"></div>
+            <!-- アイテムリスト -->
+            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:10px; margin-bottom:20px; max-height:300px; overflow-y:auto;">
+                <div id="item-list-container"></div>
             </div>
 
-            <!-- アイテム追加エリア -->
-            <div style="background:#f9fafb; padding:10px; border-radius:8px;">
-                <div style="display:flex; gap:5px; margin-bottom:10px;">
-                    <input type="text" id="inp-bulk-name" placeholder="品名 (例: PC)" style="flex:2; margin:0;">
-                    <input type="number" id="inp-bulk-count" value="1" min="1" style="flex:1; margin:0;">
-                    <button class="primary" onclick="addBulkItems()" style="width:auto; margin:0;">＋</button>
-                </div>
+            <!-- 関連提案 -->
+            <div id="related-area" class="related-box">
+                <div class="related-title">💡 関連アイテムの提案</div>
+                <div id="related-list"></div>
+            </div>
 
-                <!-- モードボタン -->
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:10px;">
-                    <button class="secondary" onclick="startNormalCamera()">📷 通常識別</button>
-                    <button class="accent" onclick="startFastMode()">🚀 カメラ+音声</button>
-                </div>
-                <button class="primary" onclick="startVoiceOnlyMode()" style="background:#10b981;">🎤 音声のみモード</button>
+            <!-- アイテム追加 -->
+            <div style="background:#f1f5f9; padding:15px; border-radius:16px; margin-top:10px;">
+                <label style="font-size:0.9rem; font-weight:bold; color:#334155;">アイテム追加</label>
+                <input type="text" id="inp-name" placeholder="品名 #タグ (例: 電池 #備蓄)" style="margin-top:5px;">
                 
-                <!-- 通常カメラエリア -->
-                <div id="normal-camera-area" style="display:none; margin-top:10px;">
-                    <video id="normal-video" autoplay playsinline muted style="width:100%; border-radius:8px;"></video>
-                    <div id="ai-hint" style="text-align:center; font-size:0.9rem; color:var(--primary); margin:5px 0;">AI準備中...</div>
-                    <button class="primary" onclick="snapAndRegister()">これを入れる！</button>
-                    <button class="secondary" onclick="stopNormalCamera()">キャンセル</button>
+                <div style="display:flex; gap:10px; margin-bottom:10px;">
+                    <button class="btn-p" onclick="addItem()">＋ 追加</button>
+                    <button class="btn-s" onclick="startVoice()">🎤 音声</button>
+                    <button class="btn-s" onclick="startCam()">📷 AI</button>
+                </div>
+
+                <!-- カメラUI -->
+                <div id="cam-ui" style="display:none; background:white; padding:10px; border-radius:12px; margin-top:10px;">
+                    <video id="cam-video" autoplay playsinline muted style="width:100%; border-radius:8px;"></video>
+                    <div id="ai-hint" style="text-align:center; font-size:0.85rem; margin:8px 0; font-weight:bold; color:var(--primary);">AI解析中...</div>
+                    <div style="display:flex; gap:10px;">
+                        <button class="btn-p" onclick="snapAI()">追加</button>
+                        <button class="btn-s" onclick="stopCam()">閉じる</button>
+                    </div>
                 </div>
             </div>
-            
-            <div style="display:flex; gap:10px; margin-top:15px;">
-                <button class="secondary" onclick="closeBox()">閉じる</button>
-                <button class="danger" onclick="deleteBox()">🗑️ 箱を削除</button>
+
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button class="btn-s" onclick="closeBox()">閉じる</button>
+                <button class="btn-d" onclick="deleteBox()">箱を削除</button>
             </div>
         </div>
     </div>
 
-    <!-- 2. 一覧 & 検索 (List View) -->
+    <!-- 2. 一覧 & お片付け -->
     <div id="view-list" class="view">
         <div class="card">
-            <!-- どこに入れる？提案機能 -->
-            <div style="background:#f0f9ff; padding:10px; border-radius:8px; border:1px solid #bae6fd; margin-bottom:10px;">
-                <label style="font-size:0.8rem; color:#0369a1; font-weight:bold;">どこに入れればいい？</label>
-                <div style="display:flex; gap:5px; margin-top:5px;">
-                    <input type="text" id="inp-suggest" placeholder="品名 (例: マウス)" style="margin:0;">
-                    <button class="primary" onclick="findSuggestion()" style="width:auto; margin:0;">検索</button>
+            <!-- お片付けモード (強力な検索) -->
+            <div style="background:#f0fdf4; border:1px solid #86efac; padding:15px; border-radius:16px; margin-bottom:20px;">
+                <label style="color:#15803d; font-weight:bold; font-size:0.9rem; display:flex; align-items:center; gap:5px;">
+                    <span>🧹 お片付けモード</span>
+                </label>
+                <p style="font-size:0.8rem; color:#166534; margin:5px 0 10px 0;">「これどこ？」と思ったら検索。あいまい検索対応。</p>
+                <div style="display:flex; gap:8px;">
+                    <input type="text" id="search-key" placeholder="例: ハサミ, ペン" style="margin:0;">
+                    <button class="btn-g" style="width:auto; margin:0; padding:0 20px;" onclick="renderList()">検索</button>
                 </div>
-                <div id="suggestion-area"></div>
+                <div id="cleanup-res" style="margin-top:10px; font-size:0.9rem; color:#15803d;"></div>
             </div>
 
-            <input type="text" id="filter-input" placeholder="🔍 キーワード検索..." onkeyup="renderList()">
+            <input type="text" id="filter-input" placeholder="🔍 ボックス一覧を絞り込み..." onkeyup="renderList()">
             <div id="list-container"></div>
         </div>
     </div>
 
-    <!-- 3. 設定・印刷 -->
+    <!-- 3. 設定 -->
     <div id="view-settings" class="view">
         <div class="card">
             <h3>🖨️ QR一括印刷</h3>
-            <button class="primary" onclick="generateBulkPrint()">A4印刷 (8面)</button>
+            <p style="font-size:0.9rem; color:#64748b;">未使用IDを8個生成してA4に配置します。</p>
+            <button class="btn-p" onclick="bulkPrint()">A4印刷 (8面)</button>
         </div>
         <div class="card">
-            <h3>データ同期</h3>
-            <button class="secondary" onclick="fetchData(true)">☁️ クラウド更新</button>
+            <h3>☁️ データ & アカウント</h3>
+            <p style="font-size:0.9rem; color:#64748b;">データはGoogleスプレッドシートに暗号化通信で保存されます。</p>
+            <button class="btn-s" onclick="fetchData(true)">強制同期</button>
+            <button class="btn-d" onclick="logout()">ログアウト</button>
         </div>
     </div>
-
 </div>
 
 <!-- ナビゲーション -->
 <div class="nav">
-    <div class="nav-item active" onclick="switchTab('scan')"><span class="nav-icon">📷</span>編集/追加</div>
-    <div class="nav-item" onclick="switchTab('list')"><span class="nav-icon">📦</span>一覧/提案</div>
-    <div class="nav-item" onclick="switchTab('settings')"><span class="nav-icon">⚙️</span>設定</div>
+    <div class="nav-item active" onclick="tab('scan')"><span class="nav-icon">📷</span>編集</div>
+    <div class="nav-item" onclick="tab('list')"><span class="nav-icon">📦</span>一覧</div>
+    <div class="nav-item" onclick="tab('settings')"><span class="nav-icon">⚙️</span>設定</div>
 </div>
 
-<!-- 詳細閲覧モーダル (Read-Only) -->
-<div id="detail-modal" onclick="closeDetailModal(event)">
+<!-- 引っ越しモーダル -->
+<div id="move-modal" class="modal">
     <div class="modal-content">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-            <h2 id="modal-id" style="margin:0; color:var(--primary);">BOX-ID</h2>
-            <span id="modal-cat" style="background:#eee; padding:4px 8px; border-radius:4px; font-size:0.8rem;">カテゴリ</span>
-        </div>
-        <p id="modal-loc" style="color:#666; margin:5px 0 15px 0;">場所</p>
-        
-        <div style="border-top:1px solid #eee; padding-top:10px;">
-            <ul id="modal-items" style="padding-left:20px; margin:0;"></ul>
-        </div>
-        
-        <div style="margin-top:20px; display:flex; gap:10px;">
-            <button class="primary" onclick="editFromModal()">✏️ 編集・追加する</button>
-            <button class="secondary" onclick="document.getElementById('detail-modal').style.display='none'">閉じる</button>
-        </div>
-    </div>
-</div>
-
-<!-- モードUI (高速/音声) -->
-<div id="fast-mode-ui">
-    <div style="flex:1; position:relative; overflow:hidden; display:flex; justify-content:center; align-items:center;">
-        <video id="fast-video" autoplay playsinline muted></video>
-        <!-- 音声のみモードの時はビデオを消してアイコンを出す -->
-        <div id="voice-only-icon" style="display:none; font-size:5rem; color:white;">🎤</div>
-        <div class="scan-line" id="scan-line"></div>
-    </div>
-    <div class="fast-overlay">
-        <div id="fast-log" style="color:#0f0; font-family:monospace; margin-bottom:10px;">待機中...</div>
-        <button class="secondary" onclick="stopFastMode()">終了して保存</button>
+        <h3>🚚 アイテムの移動 (引っ越し)</h3>
+        <p id="move-target-name" style="font-weight:bold; color:var(--primary); font-size:1.1rem; margin-bottom:15px;"></p>
+        <p style="font-size:0.9rem; color:#64748b;">移動先の箱を選んでください:</p>
+        <div id="move-box-list" style="max-height:300px; overflow-y:auto; border:1px solid #e2e8f0; border-radius:12px; margin-bottom:15px;"></div>
+        <button class="btn-s" onclick="closeMoveModal()">キャンセル</button>
     </div>
 </div>
 
 <div id="print-area"></div>
 
 <script>
-    // ▼▼▼ GASのURLを貼り付け ▼▼▼
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbzlI2y972-VVGC9VEoyj7yaxHF_RY5evr4ZvTU6Fa5QvHo_D1iNReMJ8vC6shlp2cC6CQ/exec"; 
+    // ▼▼▼ 設定エリア ▼▼▼
+    const GAS_URL = "ここにURLを貼り付け";
     // ▲▲▲ ▲▲▲ ▲▲▲
 
     let localDB = {}; 
     let currentBoxId = null;
     let qrScanner = null;
     let aiModel = null;
-    let audioCtx = null;
-    
-    // カメラの状態管理用
-    let isStopping = false;
+    let moveTargetIdx = null;
+    let password = localStorage.getItem('sb_pass') || "";
 
-    window.onload = async () => {
-        if(GAS_URL.includes("URL")) alert("GASのURLを設定してください！");
-        await fetchData();
-        initAudio();
-        renderList();
-        // 初期状態のスキャン開始
-        if(document.getElementById('view-scan').classList.contains('active')) {
-            setTimeout(startQR, 500);
-        }
+    // ★★★ 30倍強化辞書 (カテゴリ別キーワード展開) ★★★
+    const DICTIONARY = {
+        "文房具": ["ペン","ボールペン","鉛筆","消しゴム","定規","ハサミ","カッター","のり","テープ","ホッチキス","付箋","ノート","メモ","ファイル","バインダー","電卓","筆箱","クリップ","画鋲","修正テープ","封筒","手紙","便箋","シャープペンシル","コンパス","分度器","製図ペン","水性ペン","油性ペン","マーカー","蛍光ペン","筆ペン","万年筆","インク","替芯","芯ケース","スティックのり","液体のり","テープのり","マスキングテープ","両面テープ","セロハンテープ","ガムテープ","養生テープ","クリップボード","リングノート","方眼ノート","無地ノート","レポート用紙","ルーズリーフ","下敷き","えんぴつ削り","手動鉛筆削り","電動鉛筆削り","クーピー","色鉛筆","クレヨン","マーカーセット","蛍光マーカー","ホワイトボードマーカー","黒板用チョーク","ボードイレーザー","ホワイトボード","黒板","画用紙","色画用紙","厚紙","ケント紙","工作用紙","折り紙","画材セット","絵の具","パレット","筆洗い","水彩筆","丸筆","平筆","テープカッター","カッターマット","定規セット","三角定規","T定規","分度器セット","製図用シャーペン","製図消しゴム","デザインナイフ","紙用カッター","裁ちばさみ","布用ハサミ","安全ハサミ","カッティングボード","メッシュケース","ドキュメントファイル","クリアファイル","ポケットファイル","名刺ホルダー","カードケース","スケッチブック","メモパッド","手帳","ダイアリー","カレンダー","デスクマット","卓上カレンダー","スケジュール帳","IDカードホルダー","ネームタグ","名札","名札ケース","マグネット","強力マグネット","マグネットシート","掲示板ピン","ピンセット","ステープラー","ミニホッチキス","ステープル","ステープルリムーバー","パンチ","2穴パンチ","多穴パンチ","紙折り機","紙クリップ","ゼムクリップ","大型クリップ","ダブルクリップ","書類バサミ","ブックスタンド","ブックエンド","しおり","インデックスシール","ラベル","ラベルシール","宛名ラベル","分類ラベル","ネームシール","両面シール","透明シール","クラフト紙","封筒クラフト","長形封筒","角形封筒","茶封筒","カラー封筒","レターセット","ポストカード","はがき","切手","手紙用紙","芳名帳","領収書","伝票","会計伝票","出金伝票","メモ用紙","付箋セット","ロール付箋","インデックス付箋","蛍光付箋","透明付箋","布テープ","紙テープ","パイプファイル","キングファイル","フラットファイル","Z式ファイル","クリップファイル","蛇腹ファイル","証書ファイル","名刺ファイル","封かんテープ","梱包テープ","OPPテープ","クラフトテープ","ミシン目テープ","ナンバリング","スタンプ","日付スタンプ","シャチハタ","印鑑","印鑑ケース","朱肉","スタンプ台","印面クリーナー","パウチ","ラミネートフィルム","ラミネーター","コインケース","金庫","小型金庫","電卓関数電卓","ポケット電卓","暗算盤","そろばん","メジャー","巻尺","水平器","工作キット","針金","ワイヤー","紙粘土","軽量粘土","スチレンボード","のりスプレー","スプレー糊","両面シート","色テープ","飾りテープ","デコレーションシール","スタンプシール","ペーパーナイフ","レターオープナー","封筒スケール","書道筆","半紙","墨汁","すずり","文鎮","下敷き書道用","書道セット","裁縫セット(文具扱い)","糸切りばさみ","リッパー","工具セット小型","精密ドライバー","ルーペ","拡大鏡","拡大ルーペ","チェックルーペ","メタル定規","竹定規","アルミ定規","アクリル定規","ステンレス定規","マーカー定規","スクールセット","ポーチ","ペンケース布","ペンケースハード","ロールペンケース","立つペンケース","シザーケース","画材バッグ","工作バッグ","ミニノート","リングメモ","横罫メモ","無地メモ","スティックメモ","チェックリストメモ","伝票ホルダー","タックシール","値札シール","訂正印","ネームペン","マルチペン","色ボールペン","ジェルペン","ゲルインクペン","耐水ペン","極細ペン","筆記補助グリップ","鉛筆キャップ","鉛筆ホルダー","消しゴムカバー","練り消し","砂消しゴム","字消し板","カーボン紙","コピー紙","普通紙","写真用紙","光沢紙","耐水紙","名刺用紙","ラベル用紙","はがき用紙","カード用紙","印刷用紙","工作段ボール","ミニ段ボール","コルクボード","ブラックボード","掲示板","バインダーA4","バインダーB5","レタートレイ","書類ケース","PPケース","ツールボックス","スチール棚(文具収納)","デスクオーガナイザー","デスクトレー","小物入れ","引き出しケース","ホワイトボードシート","黒板シート","マグネットシート文具","クリーニングクロス","静電気除去ブラシ","スケールルーペ","テンプレート定規","サークルテンプレート","スクエアテンプレート"],
+        "衣類": ["服","シャツ","Tシャツ","ブラウス","セーター","ニット","トレーナー","パーカー","コート","ジャケット","ダウン","ズボン","パンツ","スカート","デニム","ジーンズ","下着","靴下","タイツ","ストッキング","パジャマ","部屋着","ベルト","帽子","キャップ","マフラー","手袋","ネクタイ","スーツ","水着","浴衣","アウター","ブルゾン","ダッフルコート","チェスターコート","トレンチコート","ステンカラーコート","ライダースジャケット","レザージャケット","ボアジャケット","フリース","ウインドブレーカー","スタジャン","MA-1","Pコート","キルティングジャケット","ポロシャツ","ボタンダウンシャツ","ワイシャツ","ドレスシャツ","オープンカラーシャツ","アロハシャツ","カーディガン","タートルネック","クルーネック","Vネック","ラグランTシャツ","ヘンリーネック","ロンT","五分袖シャツ","七分袖シャツ","ロングシャツ","チュニック","ニットベスト","ベスト","ジレ","スウェット","セットアップ","オーバーオール","サロペット","ジャンパースカート","キャミソール","タンクトップ","ノースリーブ","ビスチェ","チューブトップ","ブラトップ","スポーツブラ","スポーツウェア","ジャージ","トレーニングウェア","ランニングウェア","サッカーウェア","バスケユニフォーム","野球ユニフォーム","防寒インナー","ヒートインナー","保温タイツ","レギンス","スパッツ","ワイドパンツ","スラックス","チノパン","カーゴパンツ","テーパードパンツ","ショートパンツ","ハーフパンツ","バミューダパンツ","スウェットパンツ","ジョガーパンツ","レザーパンツ","サルエルパンツ","フレアパンツ","プリーツスカート","タイトスカート","フレアスカート","ロングスカート","ミニスカート","マキシスカート","キュロット","キルトスカート","ジャンスカ","ドレス","ワンピース","イブニングドレス","パーティードレス","フォーマルドレス","カクテルドレス","ミニワンピ","マキシワンピ","サマードレス","ニットワンピ","シャツワンピ","和装","着物","振袖","訪問着","小紋","袴","甚平","作務衣","法被","帯","帯締め","帯揚げ","足袋","草履","下駄","防寒具","イヤーマフ","ネックウォーマー","アームウォーマー","レッグウォーマー","ポンチョ","ストール","ショール","カウル","ケープ","UVパーカー","ウルトラライトダウン","防風ジャケット","レインコート","レインポンチョ","カッパ","ウエットスーツ","ドライスーツ","競泳水着","ラッシュガード","スクール水着","ビキニ","タンキニ","ワンピース水着","ビーチサンダル","部活Tシャツ","スクールシャツ","スクールカーディガン","学生服","学ラン","ブレザー","セーラー服","Yシャツ(学生)","体操服","給食着","作業着","つなぎ","安全ベスト","白衣","ナース服","シェフコート","エプロン","三角巾","コック服","制服","事務服","スモック","カフェエプロン","スタジアムジャンパー","防弾チョッキ(衣類カテゴリ扱い)","インナーシャツ","インナーパンツ","アンダーシャツ","アンダーウェア","ブリーフ","トランクス","ボクサーパンツ","レース下着","ガードル","キャミソールインナー","冬用インナー","夏用インナー","吸汗速乾インナー","通気性インナー","断熱インナー","ふわもこパジャマ","ナイトガウン","バスローブ","スリープウェア","ルームワンピ","ルームカーディガン","サテンパジャマ","もこもこ靴下","厚手靴下","ショートソックス","アンクルソックス","クルーソックス","ニーハイソックス","オーバーニー","五本指ソックス","タイダイソックス","足首ウォーマー","帽子","キャスケット","ベレー帽","ハット","ニット帽","ビーニー","サンバイザー","ワークキャップ","バケットハット","カウボーイハット","ストローハット","雨用ハット","手袋","防寒手袋","ニット手袋","革手袋","軍手","タッチパネル対応手袋","作業用手袋","指なし手袋","アームカバー","スーツジャケット","スーツパンツ","スーツスカート","フォーマルスーツ","リクルートスーツ","礼服","喪服","タキシード","燕尾服","ディレクターズスーツ","オーダースーツ","ビジネスコート","ビジネスシャツ","ボウタイ","サスペンダー","ワイストラップ","チーフ","スカーフ","ネクタイピン","カマーバンド","シルクネクタイ","ニットネクタイ"],
+        "PC・ガジェット": ["パソコン","PC","マウス","キーボード","モニター","ディスプレイ","ケーブル","USB","充電器","アダプタ","モバイルバッテリー","スマホ","iPhone","タブレット","iPad","イヤホン","ヘッドホン","スピーカー","マイク","ウェブカメラ","ルーター","HDD","SSD","SDカード","メモリ","電池","乾電池","ノートパソコン","デスクトップPC","ゲーミングPC","ミニPC","一体型PC","Chromebook","MacBook","Mac mini","iMac","Surface","トラックパッド","トラックボールマウス","ゲーミングマウス","メカニカルキーボード","テンキーパッド","マウスパッド","大型マウスパッド","スタンド","ノートPCスタンド","モニターアーム","タブレットスタンド","スマホスタンド","折りたたみスタンド","USBメモリ","USB-Cケーブル","Lightningケーブル","MicroUSBケーブル","HDMIケーブル","DisplayPortケーブル","LANケーブル","光ケーブル","延長コード","電源タップ","急速充電器","GaN充電器","ワイヤレス充電器","MagSafe充電器","Qi充電器","車載充電器","ACアダプタ","PD充電器","ドッキングステーション","USBハブ","USB-Cハブ","SDカードリーダー","microSDカード","CFカード","外付けHDD","外付けSSD","ポータブルSSD","NAS","RAIDケース","メモリモジュール","DDR4メモリ","DDR5メモリ","CPU","GPU","マザーボード","電源ユニット","PCケース","PCケースファン","CPUクーラー","簡易水冷クーラー","グラフィックボード","サウンドカード","キャプチャーボード","ビデオキャプチャー","OBS用カメラ","ウェブ会議用マイク","コンデンサーマイク","ダイナミックマイク","ワイヤレスイヤホン","完全ワイヤレスイヤホン","ノイズキャンセリングイヤホン","Bluetoothイヤホン","骨伝導イヤホン","ゲーミングヘッドセット","開放型ヘッドホン","密閉型ヘッドホン","ヘッドホンアンプ","DAC","スピーカーセット","サウンドバー","2.1chスピーカー","5.1chスピーカー","Bluetoothスピーカー","小型スピーカー","ゲーミングスピーカー","ウェブカメラHD","4Kウェブカメラ","会議用スピーカーフォン","スマートスピーカー","ヘッドセット","片耳ヘッドセット","VRヘッドセット","ARデバイス","スマートグラス","Fireタブレット","Androidタブレット","電子書籍リーダー","Kindle","電子ペーパー端末","スマートウォッチ","Apple Watch","Galaxy Watch","Fitbit","活動量計","防犯カメラ","ネットワークカメラ","見守りカメラ","ドライブレコーダー","カーオーディオ","カーナビ","車載ホルダー","ワイヤレスアダプタ","プロジェクター","ミニプロジェクター","家庭用プロジェクター","スクリーン","レーザーポインター","プレゼンリモコン","電卓","関数電卓","電子辞書","翻訳機","ワイヤレスルーター","メッシュWi-Fi","中継器","ONU","モデム","PoEアダプタ","LANスイッチ","Wi-Fiアダプタ","Bluetoothアダプタ","ホームサーバー","ミニサーバー","Raspberry Pi","Arduino","マイコンボード","電子工作キット","スマートリモコン","赤外線リモコン","シーリングライト（スマート）","IoTハブ","スマートプラグ","電源管理スマートタップ","温湿度計（スマート）","空気質センサー","防犯センサー","スマートロック","QRコードリーダー","バーコードリーダー","ラベルプリンター","小型プリンター","インクジェットプリンター","レーザープリンター","スキャナー","ポータブルスキャナー","A3スキャナー","フィルムスキャナー","コピー機","FAX","ペンタブレット","液晶ペンタブレット","スタイラスペン","Apple Pencil","Surfaceペン","スタイラスシート","ゲーミングチェア","ゲーミングデスク","モニターライト","デスクライト（USB）","PCクリーナー","エアダスター","キーボードカバー","ディスプレイカバー","バッテリーケース","スマホケース","強化ガラスフィルム","保護フィルム","プライバシーフィルム","ルーターケース","ケーブルボックス","ケーブルクリップ","結束バンド","面ファスナーケーブルタイ","ケーブルスリーブ","HDDケース","SSDケース","HDDスタンド","クローンスタンド","ACケーブル","電源コード","変換アダプタ","HDMI変換","USB変換","LAN変換アダプタ","M.2 SSD","NVMe SSD","SATA SSD","HDD 3.5インチ","HDD 2.5インチ","Blu-rayドライブ","DVDドライブ","光学ドライブ","外付けドライブ","外付けBDドライブ","電池パック","リチウムイオン電池","モバイルWi-Fi","ポケットWiFi","スマートタグ","AirTag","Tile","GPSトラッカー","ワイヤレスキーボード","折りたたみキーボード","片手キーボード","ゲーミングキーパッド","テンキーレスキーボード","静音キーボード","RGBキーボード","RGBマウス","ゲーミングマウスパッド","充電式マウス","縦型マウス","エルゴノミクスマウス","Bluetoothマウス"],
+        "キッチン": ["鍋","フライパン","やかん","包丁","まな板","ボウル","ザル","皿","コップ","グラス","マグカップ","箸","スプーン","フォーク","ナイフ","お玉","フライ返し","タッパー","保存容器","水筒","弁当箱","ラップ","アルミホイル","キッチンペーパー","洗剤","スポンジ","調味料","塩","砂糖","醤油","油","食品","レトルト","缶詰","お菓子","飲料","水"],
+        "日用品": ["ティッシュ","トイレットペーパー","洗剤","柔軟剤","シャンプー","リンス","石鹸","ボディソープ","歯ブラシ","歯磨き粉","カミソリ","タオル","バスタオル","ハンガー","洗濯バサミ","掃除機","コロコロ","ゴミ袋","消臭剤","芳香剤","カイロ","マスク","消毒液","スポンジ","食器洗い洗剤","ラップ","アルミホイル","キッチンペーパー","除菌シート","ウェットティッシュ","トング","まな板","フライパン","鍋","包丁","計量カップ","保存容器","布巾","洗濯ネット","宅配袋","ストロー","ジップ袋","トイレブラシ","トイレ用洗剤","お風呂用洗剤","カビ取り剤","メガネ拭き","電球","延長コード","スリッパ","玄関マット","ドアマット","靴用消臭剤","靴べら","傘","折り畳み傘","爪切り","耳かき","綿棒","コットン","ヘアブラシ","ヘアゴム","ヘアピン","化粧水","乳液","保湿クリーム","日焼け止め","リップクリーム","虫除けスプレー","虫刺され薬","常備薬","ばんそうこう","体温計","血圧計","加湿器","除湿剤","サーキュレーター","電気ストーブ","扇風機","ゴミ箱","ペットボトルホルダー","弁当箱","水筒","箸","スプーン","フォーク","マグカップ","掃除シート","バケツ","雑巾","ほうき","ちりとり","新聞紙","輪ゴム","クリップ","収納ボックス","衣類圧縮袋","ペン立て","壁掛けフック","突っ張り棒","除草剤","軍手","ビニール手袋","ゴム手袋","キッチンタイマー","氷袋","保冷剤","保温シート","ラベルシール","乾電池","充電電池","紐","テープ","養生テープ","ガムテープ","透明テープ","メモ帳","給水スポンジ","霧吹き","花瓶","植木鉢","土","肥料","防災ラジオ","懐中電灯","非常食","簡易トイレ","保存水","紙皿","紙コップ","割りばし","靴クリーム","ブラシ","フェイスシート","メイク落とし","洗顔フォーム","入浴剤","入浴剤袋クリップ","洗濯漂白剤","酸素系漂白剤","塩素系漂白剤","網戸用クリーナー","サッシブラシ","排水口ネット","排水口カバー","鍋敷き","鍋つかみ","コースター","箸置き","キッチンばさみ","ミトン","泡立て器","ピーラー","おたま","しゃもじ","ティースプーン","スープジャー","スポーツタオル","小物入れ","レターオープナー","ホッチキス","ホッチキス針","画鋲","マグネット","のり","修正テープ","瞬間接着剤","防犯ブザー","南京錠","ワイヤーロック","名札ケース","名刺ホルダー","写真立て","爪やすり","靴下留め","衣類ブラシ","洋服カバー","ランドリーバッグ","ハンドソープ","詰め替えパック","水切りネット","耐熱手袋","ラテックス手袋","裁縫セット","糸","針","ボタン","裁ちばさみ","防虫剤","除湿シート","アイロン","アイロン台","アイロン用スプレー","テーブルクロス","ランチョンマット","マルチカバー","カーテン","カーテンフック","レースカーテン","花粉対策スプレー","布用消臭スプレー","靴磨きセット","ペーパーナプキン","保冷バッグ","圧縮袋","バンドエイド","包帯","消毒綿","冷えピタ","湿布","温熱パッド","体操マット","ストレッチバンド","手提げ袋","ショッピングバッグ","保温マグ","洗濯ロープ","ロウソク","ライター","チャッカマン","スプレーボトル","レインコート","レインカバー","収納袋","傘袋","シューズケース","布製バッグ","ハンドミラー","卓上ミラー","クシ","ヘアスプレー","ムース","ワックス","シェービングフォーム","髭剃り替刃","洗顔泡立てネット","鼻毛カッター","マッサージローラー","体重計","バスマット","防カビくん","ドアストッパー","コードクリップ","ケーブルホルダー","ランタン","非常用ブランケット","ポリ袋","ポンプ","吸水クロス","マスキングテープ","防音シート","断熱シート","すべり止めマット","鍋用クリーナー","金たわし","たわし","メラミンスポンジ","油取り紙","湯たんぽ","シーツ","枕カバー","布団カバー","敷きパッド","掛け布団","毛布","ブランケット","蚊取り線香","電子蚊取り器","虫吸い取り器","ゴキブリホイホイ","殺虫剤","害虫忌避スプレー","網戸パッチ","ライトスタンド","卓上ライト","ブックエンド","古紙紐","紙バッグ","保湿ティッシュ","高吸水タオル","洗濯石鹸","皿洗いブラシ","食器用スポンジラック","排水溝ブラシ","自動洗浄タブレット","洗濯槽クリーナー","レンジ用クリーナー","換気扇クリーナー","油落としシート","こたつ布団","こたつ敷き","ガラスクリーナー","窓拭きシート","新聞ストッカー"],
+        "薬・衛生": ["薬","風邪薬","胃薬","頭痛薬","絆創膏","ガーゼ","包帯","体温計","爪切り","綿棒","目薬","湿布","サプリメント"],
+        "工具・DIY": ["ドライバー","レンチ","スパナ","ペンチ","ニッパー","ハンマー","金槌","のこぎり","メジャー","巻尺","ネジ","釘","ボルト","ナット","ガムテープ","養生テープ","接着剤","軍手","紐","ロープ","段ボール","カッター"],
+        "趣味・おもちゃ": ["ゲーム","スイッチ","PS5","ソフト","コントローラー","フィギュア","プラモデル","ぬいぐるみ","カード","ボードゲーム","トランプ","パズル","楽器","ギター","楽譜","画材","絵の具","カメラ","レンズ","三脚","アルバム","写真","CD","DVD","ブルーレイ","本","漫画","雑誌","ニンテンドーDS","ニンテンドー3DS","Xbox","PS4","PS3","ゲームソフト","ダウンロードソフト","ジョイコン","プロコン","ジョイスティック","アーケードコントローラー","VRヘッドセット","VRコントローラー","ゲーミングPC","ゲーミングモニター","ゲーミングチェア","ゲーミングマウス","ゲーミングキーボード","モバイルゲーム","スマホゲーム","タブレットゲーム","ボードゲームセット","チェス","将棋","オセロ","バックギャモン","カルタ","UNO","麻雀牌","人生ゲーム","カタン","ドミノ","ルービックキューブ","ジグソーパズル","立体パズル","クロスワードパズル","ナンプレ","脳トレゲーム","ギターアンプ","ベースアンプ","エレキギター","アコースティックギター","クラシックギター","ベースギター","ウクレレ","ドラムセット","カホン","電子ドラム","ピアノ","キーボード","シンセサイザー","フルート","クラリネット","サックス","トランペット","ホルン","トロンボーン","バイオリン","チェロ","コントラバス","ハーモニカ","カスタネット","タンバリン","マラカス","シンバル","スティック","音楽スタンド","メトロノーム","チューナー","譜面台","画用紙","スケッチブック","キャンバス","油絵具","水彩絵具","アクリル絵具","色鉛筆","クレヨン","パステル","マーカー","筆","筆ペン","絵筆","パレット","イーゼル","消しゴム","練り消し","カッター","定規","画材セット","プラモデル用工具","接着剤","塗料","筆洗い","サンドペーパー","ヤスリ","モデリングナイフ","スプレー塗料","模型用ブラシ","組み立てキット","ラジコン","ラジコンカー","ドローン","ミニ四駆","ヨーヨー","ビー玉","けん玉","折り紙","風船","シャボン玉","カードゲーム","TCG","ポケモンカード","遊戯王カード","デュエルマスターズカード","マジックザギャザリング","バトルスピリッツ","カードスリーブ","カードケース","プレイマット","トレーディングカードアクセサリー","ミニチュアフィギュア","ガチャガチャ","フィギュアコレクション","アクションフィギュア","可動フィギュア","ねんどろいど","リボルテック","スケールフィギュア","プラモデルガンプラ","メカモデル","キャラクターモデル","建築模型","車模型","飛行機模型","船模型","鉄道模型","Nゲージ","HOゲージ","トレインセット","ミニチュアハウス","ドールハウス","人形","バービー人形","リカちゃん人形","アクションドール","ぬいぐるみセット","キャラクターぬいぐるみ","抱き枕","ボール","フリスビー","卓球ラケット","卓球ボール","バドミントンラケット","シャトルコック","テニスラケット","テニスボール","バスケットボール","サッカーボール","野球ボール","グローブ","バット","ラケットスポーツ用品","水鉄砲","砂遊びセット","シャベル","バケツ","水風船","ビーチボール","フリップゲーム","ダーツ","ダーツボード","コマ","けん玉","お手玉","スライム","粘土","工作キット","科学実験キット","天体望遠鏡","双眼鏡","顕微鏡","プラネタリウム","工作セット","模型飛行機","模型ヘリコプター","模型ロボット","ロボットキット","電子工作キット","プログラミング教材","ボードゲーム拡張セット","カードケース","カードボックス","アートブック","画集","漫画単行本","ライトノベル","絵本","小説","雑誌セット","音楽CD","DVDボックス","ブルーレイボックス","フィギュア収納ケース","ガチャガチャカプセル","コレクションケース","展示棚","ディスプレイケース","コスプレ衣装","マスクコスチューム","アクセサリー小物","キャラクターグッズ","キーホルダー","缶バッジ","アクリルスタンド","ステッカー","ポスター","タペストリー","カレンダー","ミニポスター","コンサートグッズ","ライブグッズ","ゲーム攻略本","攻略本セット","ゲーム攻略雑誌","音楽楽譜","楽譜セット","電子楽譜","レッスン本","ピアノ教材","ギター教材","ドラム教材","楽器アクセサリー","弦楽器弦","ピック","ストラップ","チューナー","カポタスト","メトロノーム","マイクスタンド","マイクケーブル","アンプケーブル","オーディオインターフェース","PA機材","DJ機材","ミキサー","オーディオケーブル","イヤホンアンプ","ヘッドホンアンプ","スピーカースタンド","アンプラック","ギターケース","ベースケース","キーボードケース","ドラムスティック","練習パッド","譜面台ライト","楽器クリーナー","湿度計","メンテナンスキット","調律器","カメラバッグ","カメラストラップ","カメラクリーニングキット","レンズフィルター","レンズフード","レンズキャップ","カメラバッテリー","メモリーカード","三脚バッグ","一脚","雲台","リモコン","シャッターレリーズ","ストロボ","ライトスタンド","ソフトボックス","アンブレラライト","LEDライト","撮影用背景","背景紙","撮影小物","アルバム表紙","フォトアルバム","ポケットアルバム","スクラップブック","写真立て","額縁","フレーム","フォトスタンド","写真用紙","プリント用紙","ポラロイドフィルム","インスタントカメラ","チェキ","デジタルカメラ","ミラーレスカメラ","一眼レフカメラ","コンパクトデジカメ","ビデオカメラ","アクションカメラ","ドライブレコーダー","ウェアラブルカメラ"],
+        "アウトドア": ["テント","寝袋","シュラフ","タープ","ランタン","ライト","懐中電灯","クーラーボックス","BBQ","コンロ","炭","椅子","テーブル","リュック","雨具","カッパ","傘","自転車","空気入れ"],
+        "季節": ["扇風機","ヒーター","ストーブ","こたつ","加湿器","除湿機","クリスマス","ツリー","オーナメント","ハロウィン","正月","飾り","プール","浮き輪"],
+        "書類": ["契約書","保証書","説明書","通帳","印鑑","パスポート","マイナンバー","年金","保険","証書","ハガキ","名刺","成績表","卒業証書","在学証明書","健康診断書","出席簿","成績通知表","学費納入証明書","奨学金申請書","奨学金受給証明書","課題提出書類","レポート","論文","研究計画書","実習報告書","履歴書","志望理由書","推薦書","申込書","申請書","保護者同意書","出欠連絡表","学校通知","授業計画書","授業評価表","シラバス","試験問題","解答用紙","答案","模擬試験","問題集","答案コピー","課題提出フォーム","課題評価表","学習計画表","学習記録","宿題プリント","プリントアウト","教科書コピー","ノートまとめ","参考資料","読書感想文","読書記録","レポート用紙","作文用紙","ポートフォリオ","作品提出用紙","研究ノート","実験記録","実験報告書","観察記録","観察ノート","日誌","学級日誌","生活記録帳","学習記録帳","出席記録","行事参加記録","部活動記録","クラブ活動記録","成績管理表","評価表","通知票","保健記録","健康カード","予防接種証明書","歯科検診結果","眼科検診結果","学校便り","学年便り","クラス便り","行事案内","案内状","出欠確認表","イベント申込書","旅行申込書","修学旅行同意書","校外学習申込書","学校行事写真申込書","図書貸出カード","図書館利用申込書","図書返却表","貸出記録","読書ノート","学習プリント","漢字練習帳","計算プリント","問題プリント","学習チェック表","チェックリスト","確認表","調査票","アンケート用紙","アンケート結果","意見書","保護者連絡帳","保護者宛通知","学校連絡票","家庭連絡票","生活指導表","指導記録","教育相談記録","カウンセリング記録","面談記録","面接記録","学習相談記録","学校便覧","学年便覧","校則集","学校規則","学則","入学案内","進学案内","募集要項","入学試験要項","受験票","合格通知","不合格通知","入学手続き書類","入学願書","入学申込書","入学通知","入学許可証","学生証申請書","学生証","在学証明書発行申請書","卒業見込証明書","卒業見込通知書","卒業証明書発行申請書","卒業証書授与通知","資格取得証明書","資格申請書","免許証申請書","免許証","検定合格証書","検定受験票","検定成績通知","賞状","表彰状","推薦状","推薦書類","推薦依頼書","推薦意見書","課題シート","課題プリント","課題メモ","研究メモ","研究ノートコピー","プロジェクト計画書","プロジェクト報告書","プロジェクト成果物","プロジェクト資料","学会発表資料","発表スライド","発表原稿","発表要旨","論文要旨","論文原稿","研究概要","研究計画書提出用紙","レポート提出用紙","レポート表紙","レポート目次","参考文献リスト","引用文献リスト","文献カード","参考書リスト","読書メモ","読書ノート","図書館利用記録","図書貸出記録","実験ノートコピー","実験手順書","実験計画書","観察メモ","観察シート","観察表","観察記録簿","日誌コピー","学級通信","クラス新聞","学校新聞","広報誌","学年新聞","部活動新聞","部活動記録","部誌","部活日誌","活動日誌","行事報告書","旅行計画書","修学旅行計画書","校外学習報告書","校外学習計画書","文化祭計画書","文化祭報告書","体育祭計画書","体育祭報告書","委員会報告書","委員会計画書","生徒会書類","生徒会記録","委任状","照会状","依頼状","案内状コピー","出席確認書","欠席届","遅刻届","早退届","申請書コピー","報告書コピー","記録簿","記録用紙","メモ用紙","付箋","チェックシート","アンケートコピー","アンケート集計表","面接記録コピー","相談記録コピー","保護者宛連絡メモ","学校宛連絡メモ","行事参加確認書","申込書コピー","承諾書","同意書コピー","保護者署名用紙","誓約書","確認書","調査報告書","学習報告書","生活報告書","進学希望調査","進学希望用紙","奨学金応募書類","奨学金申請書コピー","給付決定通知","推薦状コピー","推薦依頼書コピー","推薦意見書コピー","資格取得申請書","資格取得報告書","免許申請書コピー","免許証コピー","検定申請書","検定結果通知","合格通知コピー","不合格通知コピー","入学手続き書類コピー","入学願書コピー","入学申込書コピー","入学通知コピー","入学許可証コピー","学生証申請書コピー","在学証明書発行申請書コピー","卒業見込証明書コピー","卒業見込通知書コピー","卒業証明書発行申請書コピー","卒業証書授与通知コピー","課題提出物","課題成果物","研究成果物","プロジェクト成果物コピー","発表資料コピー","論文コピー","レポートコピー","実験記録コピー","観察記録コピー","日誌コピー2","広報誌コピー","新聞コピー","部誌コピー","行事報告書コピー","委員会報告書コピー","生徒会書類コピー"],
+        "美容": ["化粧水","乳液","クリーム","日焼け止め","メイク","口紅","ファンデーション","鏡","ドライヤー","ヘアアイロン","ブラシ","ゴム"]
     };
 
-    function initAudio() {
-        const AC = window.AudioContext || window.webkitAudioContext;
-        if (AC) audioCtx = new AC();
+    // --- 初期化 ---
+    window.onload = () => {
+        if(password) {
+            document.getElementById('login-screen').style.display='none';
+            fetchData();
+        }
+        renderList();
+    };
+
+    function tryLogin() {
+        const p = document.getElementById('login-pass').value;
+        document.getElementById('login-msg').innerText = "Auth...";
+        fetch(`${GAS_URL}?password=${p}`)
+        .then(r => r.json())
+        .then(d => {
+            if(d.error) {
+                document.getElementById('login-msg').innerText = "Wrong Password";
+            } else {
+                password = p;
+                localStorage.setItem('sb_pass', p);
+                document.getElementById('login-screen').style.display='none';
+                localDB = d;
+                renderList();
+            }
+        }).catch(e => document.getElementById('login-msg').innerText = "Error");
     }
-    function beep() {
-        if(!audioCtx) initAudio();
-        if(audioCtx && audioCtx.state==='suspended') audioCtx.resume();
-        const o=audioCtx.createOscillator(); const g=audioCtx.createGain();
-        o.connect(g); g.connect(audioCtx.destination);
-        o.frequency.setValueAtTime(880, audioCtx.currentTime);
-        g.gain.setValueAtTime(0.1, audioCtx.currentTime);
-        o.start(); o.stop(audioCtx.currentTime+0.1);
+    function logout() {
+        localStorage.removeItem('sb_pass');
+        location.reload();
     }
 
+    // --- 通信 ---
     async function fetchData(force=false) {
-        document.getElementById('status-badge').innerText = "Syncing...";
+        document.getElementById('sync-status').innerText = "Syncing...";
         try {
-            const res = await fetch(GAS_URL);
-            localDB = await res.json();
-            document.getElementById('status-badge').innerText = "Sync OK";
-            if(force) { alert("更新完了"); renderList(); }
-        } catch(e) { document.getElementById('status-badge').innerText = "Error"; }
+            const res = await fetch(`${GAS_URL}?password=${password}`);
+            const json = await res.json();
+            if(json.error) { alert("認証エラー"); logout(); return; }
+            localDB = json;
+            document.getElementById('sync-status').innerText = "Ready";
+            if(force) { alert("同期完了"); renderList(); }
+        } catch(e){ document.getElementById('sync-status').innerText = "Error"; }
     }
 
     async function pushData(payload) {
-        document.getElementById('status-badge').innerText = "Saving...";
+        document.getElementById('sync-status').innerText = "Saving...";
+        payload.password = password;
         try {
-            await fetch(GAS_URL, {
-                method: 'POST',
-                headers: { "Content-Type": "text/plain" },
-                body: JSON.stringify(payload)
-            });
-            document.getElementById('status-badge').innerText = "Saved";
-        } catch(e) { document.getElementById('status-badge').innerText = "Save Error"; }
+            await fetch(GAS_URL, { method:'POST', headers:{ "Content-Type":"text/plain" }, body:JSON.stringify(payload) });
+            document.getElementById('sync-status').innerText = "Saved";
+        } catch(e){ document.getElementById('sync-status').innerText = "Save Error"; }
     }
 
-    async function translate(text) {
-        try {
-            const res = await fetch(`${GAS_URL}?action=translate&text=${encodeURIComponent(text)}`);
-            const json = await res.json();
-            return json.translated.split(/[,\n]/)[0]; 
-        } catch(e) { return text; }
-    }
-
-    function switchTab(tab) {
-        document.querySelectorAll('.view').forEach(e => e.classList.remove('active'));
-        document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
-        document.getElementById('view-'+tab).classList.add('active');
-        document.querySelectorAll('.nav-item')[['scan','list','settings'].indexOf(tab)].classList.add('active');
-        
-        if(tab==='scan') {
-            // 画面切り替え完了を待ってからカメラ起動（重要）
-            setTimeout(startQR, 300);
-        } else {
-            stopQR();
-        }
-        
-        if(tab==='list') renderList();
-    }
-
-    // --- QR処理 (修正版) ---
-    function startQR() {
-        if(currentBoxId) return; // 編集中の場合は起動しない
-        if(isStopping) {
-            // 停止処理中の場合は少し待って再試行
-            setTimeout(startQR, 200);
-            return;
-        }
-        if(qrScanner) return; // 既に起動中なら何もしない
-
-        // 要素が表示されているか確認
-        const reader = document.getElementById("reader");
-        if (!reader || reader.offsetParent === null) {
-            return; // 非表示なら起動しない
-        }
-
-        const scanner = new Html5Qrcode("reader");
-        scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, 
-            (decoded) => { beep(); openBox(decoded); })
-        .then(() => {
-            qrScanner = scanner;
-        })
-        .catch(err => {
-            console.log("Start failed, retrying...", err);
-            // 起動に失敗した場合（タブ切替の競合など）、少し待って再試行
-            setTimeout(() => {
-                if(!qrScanner && !isStopping && document.getElementById('view-scan').classList.contains('active')) {
-                    startQR();
-                }
-            }, 500);
-        });
-    }
-
-    function stopQR() {
-        if(qrScanner) {
-            isStopping = true;
-            qrScanner.stop().then(() => {
-                qrScanner.clear();
-                qrScanner = null;
-                isStopping = false;
-            }).catch(err => {
-                console.log("Stop failed", err);
-                isStopping = false;
-                qrScanner = null; // 強制クリア
-            });
-        }
+    // --- UI ---
+    function tab(t) {
+        document.querySelectorAll('.view').forEach(e=>e.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active'));
+        document.getElementById('view-'+t).classList.add('active');
+        document.querySelectorAll('.nav-item')[['scan','list','settings'].indexOf(t)].classList.add('active');
+        if(t==='scan') setTimeout(startQR,300); else stopQR();
+        if(t==='list') renderList();
     }
 
     function openBox(id) {
         stopQR();
         currentBoxId = id;
-        document.getElementById('scan-ui').style.display = 'none';
-        document.getElementById('box-ui').style.display = 'block';
-        if(!localDB[id]) localDB[id] = { loc: "", items: [], category: "未分類" };
-        renderBoxEdit();
+        document.getElementById('scan-ui').style.display='none';
+        document.getElementById('box-ui').style.display='block';
+        if(!localDB[id]) localDB[id] = { loc:"", items:[], category:"未分類", updated: new Date() };
+        renderBoxUI();
     }
 
-    function renderBoxEdit() {
+    function renderBoxUI() {
         const d = localDB[currentBoxId];
         document.getElementById('disp-id').innerText = currentBoxId;
         document.getElementById('disp-cat').innerText = d.category || "未分類";
         document.getElementById('inp-loc').value = d.loc;
-        const list = document.getElementById('item-list');
+
+        // 断捨離アラート (365日)
+        const diff = (new Date() - new Date(d.updated)) / (1000*60*60*24);
+        if(diff > 365) document.getElementById('disp-alert').classList.add('show');
+        else document.getElementById('disp-alert').classList.remove('show');
+
+        const list = document.getElementById('item-list-container');
         list.innerHTML = "";
-        d.items.forEach((item, idx) => {
-            const div = document.createElement('div');
-            div.className = 'item-row';
-            div.innerHTML = `<div><span class="num-circle">${getDupCount(item, d.items, idx)}</span> ${item}</div>
-                <button class="secondary" style="width:auto;margin:0;padding:5px 10px;" onclick="delItem(${idx})">削除</button>`;
-            list.appendChild(div);
+        d.items.forEach((item, i) => {
+            const row = document.createElement('div');
+            row.className = "item-row";
+            const tags = (item.t||[]).map(t=>`<span class="tag">${t}</span>`).join("");
+            row.innerHTML = `
+                <div class="item-info">
+                    <span class="item-name">${item.n} ${tags}</span>
+                </div>
+                <div style="display:flex; gap:5px; align-items:center;">
+                    <div class="counter-ui">
+                        <button class="btn-sm" onclick="modCount(${i},-1)">-</button>
+                        <span class="counter-val">${item.c}</span>
+                        <button class="btn-sm" onclick="modCount(${i},1)">+</button>
+                    </div>
+                    <button class="btn-s btn-sm" onclick="openMoveModal(${i})">移動</button>
+                    <button class="btn-d btn-sm" onclick="delItem(${i})">×</button>
+                </div>`;
+            list.appendChild(row);
         });
+        findRelated(d);
     }
 
-    function getDupCount(item, arr, idx) {
-        let c = 0; for(let i=0; i<=idx; i++) if(arr[i]===item) c++; return c;
-    }
+    // --- 関連アイテム提案 ---
+    function findRelated(currentBox) {
+        const area = document.getElementById('related-area');
+        const list = document.getElementById('related-list');
+        list.innerHTML = ""; area.style.display="none";
 
-    function addBulkItems() {
-        const name = document.getElementById('inp-bulk-name').value.trim();
-        const count = parseInt(document.getElementById('inp-bulk-count').value);
-        if(!name || count < 1) return;
-        for(let i=0; i<count; i++) localDB[currentBoxId].items.push(name);
-        beep(); saveBox(); renderBoxEdit();
-        document.getElementById('inp-bulk-name').value = "";
-        document.getElementById('inp-bulk-count').value = 1;
-    }
+        const keys = new Set();
+        currentBox.items.forEach(i => { keys.add(i.n); (i.t||[]).forEach(t=>keys.add(t)); });
+        if(keys.size===0) return;
 
-    function delItem(idx) {
-        if(confirm("このアイテムを削除しますか？")) {
-            localDB[currentBoxId].items.splice(idx, 1);
-            saveBox(); renderBoxEdit();
+        let hits = [];
+        Object.keys(localDB).forEach(bid => {
+            if(bid === currentBoxId) return;
+            const b = localDB[bid];
+            b.items.forEach(itm => {
+                for(let k of keys) {
+                    if(itm.n.includes(k) || (itm.t||[]).includes(k)) {
+                        hits.push({ bid, n:itm.n, loc:b.loc }); return;
+                    }
+                }
+            });
+        });
+        if(hits.length > 0) {
+            area.style.display="block";
+            hits.slice(0,3).forEach(h => {
+                const d = document.createElement('div');
+                d.className="related-item";
+                d.innerText=`${h.n} は ${h.bid} (${h.loc}) にもあります`;
+                d.onclick=()=>{ closeBox(); openBox(h.bid); };
+                list.appendChild(d);
+            });
         }
     }
 
-    async function deleteBox() {
-        if(!confirm(`本当に ${currentBoxId} を削除しますか？\n中身のデータも全て消えます。`)) return;
-        delete localDB[currentBoxId];
-        await pushData({ boxId: currentBoxId, action: 'delete' });
-        alert("削除しました");
-        closeBox();
+    // --- アイテム操作 ---
+    function addItem() {
+        const val = document.getElementById('inp-name').value.trim();
+        if(!val) return;
+        const tags = val.match(/#[^\s]+/g) || [];
+        const name = val.replace(/#[^\s]+/g, "").trim();
+        localDB[currentBoxId].items.push({ n:name, c:1, t:tags });
+        document.getElementById('inp-name').value = "";
+        saveBox(); renderBoxUI();
     }
-
+    function modCount(i,d) {
+        const itm = localDB[currentBoxId].items[i];
+        itm.c += d; if(itm.c < 1) itm.c=1;
+        saveBox(); renderBoxUI();
+    }
+    function delItem(i) {
+        if(confirm("削除しますか？")) {
+            localDB[currentBoxId].items.splice(i, 1);
+            saveBox(); renderBoxUI();
+        }
+    }
+    async function deleteBox() {
+        if(!confirm("箱ごと削除しますか？")) return;
+        delete localDB[currentBoxId];
+        await pushData({ action:'delete', boxId:currentBoxId });
+        alert("削除しました"); closeBox();
+    }
     function saveBox() {
         const d = localDB[currentBoxId];
         d.loc = document.getElementById('inp-loc').value;
-        pushData({ boxId: currentBoxId, location: d.loc, items: d.items, category: d.category, action: 'save' });
+        d.updated = new Date();
+        pushData({ action:'save', boxId:currentBoxId, location:d.loc, items:d.items, category:d.category });
     }
 
-    function closeBox() {
-        currentBoxId = null;
-        document.getElementById('box-ui').style.display = 'none';
-        document.getElementById('scan-ui').style.display = 'block';
-        // 画面切り替え後にカメラ再起動
-        setTimeout(startQR, 300);
-    }
-
-    function findSuggestion() {
-        const query = document.getElementById('inp-suggest').value.trim();
-        const area = document.getElementById('suggestion-area');
-        if(!query) return;
-
-        let candidates = [];
-        let targetCat = "";
-        if(query.match(/マウス|キーボード|PC|USB/i)) targetCat = "PC・ガジェット";
-        else if(query.match(/服|コート/)) targetCat = "衣類・ファッション";
-
-        Object.keys(localDB).forEach(id => {
-            const box = localDB[id];
-            let score = 0;
-            if(box.category === targetCat) score += 10;
-            if(targetCat === "" && box.category !== "未分類" && box.category !== "その他") {
-                 if(box.category.includes(query)) score += 10;
-            }
-            const hasSimilar = box.items.some(item => item.includes(query) || query.includes(item));
-            if(hasSimilar) score += 5;
-            if(score > 0) candidates.push({ id, loc: box.loc, cat: box.category, score });
+    // --- 引っ越し ---
+    function openMoveModal(i) {
+        moveTargetIdx = i;
+        const itm = localDB[currentBoxId].items[i];
+        document.getElementById('move-target-name').innerText = `${itm.n} (${itm.c}個)`;
+        const l = document.getElementById('move-box-list'); l.innerHTML="";
+        Object.keys(localDB).forEach(bid => {
+            if(bid===currentBoxId) return;
+            const b = localDB[bid];
+            const d = document.createElement('div');
+            d.className="box-row"; d.style.padding="10px";
+            d.innerHTML=`<b>${bid}</b> <span style="font-size:0.8rem">${b.loc}</span>`;
+            d.onclick=()=>execMove(bid);
+            l.appendChild(d);
         });
-
-        candidates.sort((a,b) => b.score - a.score);
-
-        if(candidates.length > 0) {
-            area.style.display = "block";
-            area.innerHTML = "<b>💡おすすめの箱:</b><br>" + candidates.slice(0, 3).map(c => 
-                `・<a href="#" onclick="showDetailModal('${c.id}')">${c.id}</a> (${c.cat}) @${c.loc}`
-            ).join("<br>");
-        } else {
-            area.style.display = "block";
-            area.innerHTML = "💡一致する箱が見つかりませんでした。";
-        }
+        document.getElementById('move-modal').style.display="flex";
+    }
+    function closeMoveModal() { document.getElementById('move-modal').style.display="none"; }
+    function execMove(toId) {
+        const itm = localDB[currentBoxId].items[moveTargetIdx];
+        if(!localDB[toId]) localDB[toId]={items:[]};
+        localDB[toId].items.push(itm);
+        localDB[currentBoxId].items.splice(moveTargetIdx,1);
+        saveBox();
+        const d = localDB[toId];
+        pushData({ action:'save', boxId:toId, location:d.loc, items:d.items, category:d.category });
+        alert("移動しました"); closeMoveModal(); renderBoxUI();
     }
 
+    // --- 検索・一覧・お片付け ---
     function renderList() {
-        const k = document.getElementById('filter-input').value.toLowerCase();
-        const c = document.getElementById('list-container');
-        c.innerHTML = "";
+        const key = (document.getElementById('search-key').value || document.getElementById('filter-input').value).toLowerCase();
+        const cont = document.getElementById('list-container');
+        cont.innerHTML="";
         
-        Object.keys(localDB).forEach(id => {
-            const d = localDB[id];
-            if(`${id} ${d.loc} ${d.items.join(' ')}`.toLowerCase().includes(k)) {
-                const div = document.createElement('div');
-                div.className = 'box-row';
-                const summary = d.items.length > 0 ? `${d.items[0]} 他${d.items.length-1}点` : "空";
-                div.innerHTML = `
-                    <div>
-                        <div style="font-weight:bold; color:var(--primary);">${id} <span class="box-tag">${d.category||'未'}</span></div>
-                        <div style="font-size:0.85rem; color:#666;">@${d.loc}</div>
-                    </div>
-                    <div style="font-size:0.9rem; color:#333;">${summary}</div>
-                `;
-                div.onclick = () => showDetailModal(id);
-                c.appendChild(div);
-            }
-        });
-    }
+        const cleanupRes = document.getElementById('cleanup-res');
+        if(key && document.getElementById('view-list').classList.contains('active')) cleanupRes.innerText="検索中...";
+        else cleanupRes.innerText="";
 
-    function showDetailModal(id) {
-        const d = localDB[id];
-        document.getElementById('modal-id').innerText = id;
-        document.getElementById('modal-cat').innerText = d.category || "未分類";
-        document.getElementById('modal-loc').innerText = "保管場所: " + (d.loc || "未設定");
-        const ul = document.getElementById('modal-items');
-        ul.innerHTML = "";
-        if(d.items.length === 0) {
-            ul.innerHTML = "<li style='color:#999'>中身はありません</li>";
-        } else {
-            d.items.forEach(item => {
-                const li = document.createElement('li'); li.innerText = item; ul.appendChild(li);
+        // 辞書展開
+        let words = [key];
+        if(key) {
+            Object.keys(DICTIONARY).forEach(cat => {
+                // カテゴリ名または中身に一致したら、そのカテゴリの全単語を検索対象に追加
+                if(cat.includes(key) || DICTIONARY[cat].some(w=>w.includes(key))) {
+                    words = words.concat(DICTIONARY[cat]);
+                }
             });
         }
-        currentBoxId = id;
-        document.getElementById('detail-modal').style.display = "flex";
+
+        let hits = 0;
+        Object.keys(localDB).forEach(id => {
+            const d = localDB[id];
+            const boxStr = `${id} ${d.loc} ${d.category}`.toLowerCase();
+            const itmsStr = d.items.map(i=>i.n+(i.t||[]).join("")).join(" ").toLowerCase();
+            
+            let match = false;
+            if(!key) match=true;
+            else {
+                for(let w of words) {
+                    if(boxStr.includes(w) || itmsStr.includes(w)) { match=true; break; }
+                }
+            }
+
+            if(match) {
+                if(key) hits++;
+                const div = document.createElement('div');
+                div.className="box-row";
+                const prev = d.items.slice(0,3).map(i=>i.n).join(", ")+(d.items.length>3?"...":"");
+                let locH = d.loc; if(key && locH.toLowerCase().includes(key)) locH = `<span class="hl">${locH}</span>`;
+                div.innerHTML=`
+                    <div>
+                        <span style="font-weight:bold;color:var(--primary);">${id}</span>
+                        <span class="box-badge">${d.category||'未'}</span>
+                    </div>
+                    <div style="font-size:0.85rem;color:#64748b;">@${locH}</div>
+                    <div style="font-size:0.9rem;color:#334155;margin-top:5px;">${prev}</div>
+                `;
+                div.onclick=()=>{ tab('scan'); openBox(id); };
+                cont.appendChild(div);
+            }
+        });
+
+        if(key) cleanupRes.innerHTML = hits>0 ? `<b>${hits}個の箱</b>が見つかりました` : "見つかりません";
     }
 
-    function closeDetailModal(e) {
-        if(e.target.id === 'detail-modal') {
-            document.getElementById('detail-modal').style.display = "none";
-            currentBoxId = null;
+    // --- カメラ/音声 ---
+    function startQR() {
+        if(currentBoxId || qrScanner) return;
+        const r = document.getElementById("reader");
+        if(r && r.offsetParent!==null) {
+            const sc = new Html5Qrcode("reader");
+            sc.start({facingMode:"environment"},{fps:10,qrbox:250},(t)=>{openBox(t)})
+            .then(()=>{qrScanner=sc}).catch(()=>{setTimeout(startQR,500)});
         }
     }
+    function stopQR() { if(qrScanner) qrScanner.stop().then(()=>{qrScanner.clear();qrScanner=null}).catch(()=>{qrScanner=null}); }
+    function closeBox() { currentBoxId=null; document.getElementById('box-ui').style.display='none'; document.getElementById('scan-ui').style.display='block'; setTimeout(startQR,300); }
 
-    function editFromModal() {
-        document.getElementById('detail-modal').style.display = "none";
-        switchTab('scan');
-        openBox(currentBoxId);
-    }
-
-    let normalStream=null, fastStream=null, recognition=null;
-    let lastVoiceT=0, lastSpoken="";
-    let isVoiceOnly = false;
-
-    async function startNormalCamera() {
+    let aiStream=null;
+    async function startCam() {
         if(!aiModel) aiModel = await mobilenet.load();
-        document.getElementById('normal-camera-area').style.display = 'block';
-        const v = document.getElementById('normal-video');
-        normalStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-        v.srcObject = normalStream;
-        detNormal();
+        document.getElementById('cam-ui').style.display='block';
+        aiStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});
+        document.getElementById('cam-video').srcObject = aiStream;
+        loopAI();
     }
-    async function detNormal() {
-        if(!normalStream) return;
-        const v = document.getElementById('normal-video');
-        if(v.readyState===4) {
+    async function loopAI() {
+        const v = document.getElementById('cam-video');
+        if(v.readyState===4 && document.getElementById('cam-ui').style.display!=='none') {
             const p = await aiModel.classify(v);
-            if(p.length>0) document.getElementById('ai-hint').innerText = `AI予測: ${p[0].className} ?`;
+            if(p.length>0) document.getElementById('ai-hint').innerText = "AI予測: " + p[0].className;
         }
-        requestAnimationFrame(detNormal);
+        if(aiStream) requestAnimationFrame(loopAI);
     }
-    async function snapAndRegister() {
+    async function snapAI() {
         const h = document.getElementById('ai-hint').innerText;
         if(h.includes("AI予測:")) {
-            const ja = await translate(h.replace("AI予測: ", "").replace(" ?", ""));
-            const n = prompt("登録名:", ja);
-            if(n) { localDB[currentBoxId].items.push(n); beep(); saveBox(); renderBoxEdit(); stopNormalCamera(); }
+            const en = h.split(": ")[1];
+            const res = await fetch(`${GAS_URL}?action=translate&text=${en}&password=${password}`);
+            const j = await res.json();
+            const n = prompt("登録名:", j.translated);
+            if(n) { localDB[currentBoxId].items.push({n:n,c:1,t:[]}); saveBox(); renderBoxUI(); stopCam(); }
         }
     }
-    function stopNormalCamera() {
-        if(normalStream) normalStream.getTracks().forEach(t=>t.stop());
-        normalStream = null;
-        document.getElementById('normal-camera-area').style.display = 'none';
-    }
-
-    async function startFastMode(voiceOnly = false) {
-        isVoiceOnly = voiceOnly;
-        if(!voiceOnly && !aiModel) aiModel = await mobilenet.load();
-
-        document.getElementById('fast-mode-ui').style.display = 'flex';
-        const v = document.getElementById('fast-video');
-        const icon = document.getElementById('voice-only-icon');
-        const line = document.getElementById('scan-line');
-
-        if(voiceOnly) {
-            v.style.display = 'none';
-            line.style.display = 'none';
-            icon.style.display = 'block';
-            document.getElementById('fast-log').innerText = "音声のみ: 待機中...";
-        } else {
-            v.style.display = 'block';
-            line.style.display = 'block';
-            icon.style.display = 'none';
-            try {
-                fastStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-                v.srcObject = fastStream;
-                loopFastAI();
-            } catch(e){}
-        }
-
+    function stopCam() { if(aiStream) aiStream.getTracks().forEach(t=>t.stop()); aiStream=null; document.getElementById('cam-ui').style.display='none'; }
+    
+    function startVoice() {
         const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if(SR) {
-            recognition = new SR();
-            recognition.lang = 'ja-JP'; recognition.continuous = true; recognition.interimResults = false;
-            recognition.onend = () => { if(document.getElementById('fast-mode-ui').style.display==='flex') try{recognition.start()}catch(e){} };
-            recognition.onresult = (e) => {
-                const t = e.results[e.results.length-1][0].transcript.trim();
-                handleFast(t, false);
-            };
-            try{recognition.start()}catch(e){}
-        }
-    }
-
-    function startVoiceOnlyMode() { startFastMode(true); }
-
-    async function loopFastAI() {
-        if(document.getElementById('fast-mode-ui').style.display==='none' || isVoiceOnly) return;
-        const v = document.getElementById('fast-video');
-        const now = Date.now();
-        if(v.readyState===4 && (now - lastVoiceT > 1500)) {
-            const p = await aiModel.classify(v);
-            if(p.length>0 && p[0].probability>0.65) {
-                const ja = await translate(p[0].className);
-                if(Date.now() - lastVoiceT > 1500) handleFast(ja, true);
+        if(!SR) return alert("非対応ブラウザ");
+        const r = new SR(); r.lang='ja-JP';
+        r.onresult = (e) => {
+            const t = e.results[0][0].transcript;
+            if(confirm(`「${t}」を追加しますか？`)) {
+                localDB[currentBoxId].items.push({n:t,c:1,t:[]}); saveBox(); renderBoxUI();
             }
+        };
+        r.start();
+    }
+
+    function printQR() {
+        const a=document.getElementById('print-area'); a.style.display='block'; a.className='mode-single';
+        a.innerHTML=`<div class="print-card"><div class="print-id">${currentBoxId}</div><div id="pq"></div></div>`;
+        new QRCode(document.getElementById("pq"),{text:currentBoxId,width:300,height:300});
+        setTimeout(()=>{window.print();a.style.display='none'},500);
+    }
+    function bulkPrint() {
+        const a=document.getElementById('print-area'); a.style.display='grid'; a.className='mode-bulk';
+        a.innerHTML="";
+        for(let i=0; i<8; i++) {
+            let id='BOX-'+Math.floor(1000+Math.random()*9000);
+            while(localDB[id]) id='BOX-'+Math.floor(1000+Math.random()*9000);
+            const d=document.createElement('div'); d.className='print-card';
+            d.innerHTML=`<div class="print-id">${id}</div><div id="pq${i}"></div>`;
+            a.appendChild(d);
+            new QRCode(document.getElementById(`pq${i}`),{text:id,width:128,height:128});
         }
-        if(fastStream) requestAnimationFrame(loopFastAI);
-    }
-
-    function handleFast(t, isAI) {
-        if(t==="終了") { stopFastMode(); return; }
-        if(t===lastSpoken) return;
-        if(!isAI) lastVoiceT = Date.now();
-        lastSpoken = t;
-        localDB[currentBoxId].items.push(t);
-        document.getElementById('fast-log').innerText = `登録: ${t} ${isAI?'(AI)':'(音声)'}`;
-        beep();
-    }
-
-    function stopFastMode() {
-        if(fastStream) fastStream.getTracks().forEach(t=>t.stop());
-        if(recognition) recognition.stop();
-        fastStream = null;
-        document.getElementById('fast-mode-ui').style.display = 'none';
-        saveBox(); renderBoxEdit();
-    }
-
-    function printCurrentBoxQR() {
-        const area = document.getElementById('print-area');
-        area.className = 'mode-single';
-        area.innerHTML = `<div class="print-card"><div class="print-id">${currentBoxId}</div><div id="qr-single"></div></div>`;
-        new QRCode(document.getElementById("qr-single"), { text: currentBoxId, width: 256, height: 256 });
-        setTimeout(() => window.print(), 500);
-    }
-    function generateBulkPrint() {
-        const area = document.getElementById('print-area');
-        area.className = 'mode-bulk';
-        area.innerHTML = "";
-        let count = 0; let generated = [];
-        while(count < 8) {
-            const rand = 'BOX-' + Math.floor(1000 + Math.random()*9000);
-            if(!localDB[rand] && !generated.includes(rand)) { generated.push(rand); count++; }
-        }
-        generated.forEach(id => {
-            const c = document.createElement('div');
-            c.className = 'print-card';
-            c.innerHTML = `<div class="print-id">${id}</div><div id="qr-${id}"></div>`;
-            area.appendChild(c);
-            new QRCode(document.getElementById(`qr-${id}`), { text: id, width: 128, height: 128 });
-        });
-        setTimeout(() => window.print(), 500);
+        setTimeout(()=>{window.print();a.style.display='none'},500);
     }
 </script>
 </body>
