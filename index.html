@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Smart Box V7</title>
+    <title>Smart Box V12</title>
     
-    <!-- ライブラリ -->
+    <!-- Libraries -->
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
@@ -13,189 +13,181 @@
 
     <style>
         :root { 
-            --primary: #2563eb; 
-            --bg: #f1f5f9; 
-            --card-bg: #ffffff;
-            --text: #1e293b;
+            --primary: #6366f1; 
+            --primary-bg: #e0e7ff;
+            --danger: #ef4444; 
+            --warning: #f59e0b;
+            --success: #10b981;
+            --bg: #f8fafc; 
+            --text: #334155;
+            --card: #ffffff;
             --border: #e2e8f0;
         }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 0; background: var(--bg); color: var(--text); padding-bottom: 110px; -webkit-tap-highlight-color: transparent; }
         
-        /* ログイン画面 */
-        #login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--primary); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; }
-        #login-screen input { width: 200px; text-align: center; font-size: 1.5rem; letter-spacing: 5px; margin: 20px 0; border: none; border-radius: 8px; padding: 10px; }
-        
+        /* ログイン */
+        #login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--primary); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; transition: opacity 0.3s; }
+        #login-overlay input { width: 220px; text-align: center; font-size: 1.5rem; letter-spacing: 4px; margin: 20px 0; border: none; border-radius: 12px; padding: 12px; }
+
         /* ヘッダー */
-        .header { background: var(--primary); color: white; padding: 15px 20px; position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        h1 { margin: 0; font-size: 1.2rem; font-weight: 800; }
-        .status-badge { font-size: 0.75rem; background: rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 20px; font-weight: bold; }
+        .header { background: var(--primary); color: white; padding: 15px 20px; position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.2); }
+        h1 { margin: 0; font-size: 1.2rem; font-weight: 800; letter-spacing: 0.5px; }
+        .sync-badge { font-size: 0.75rem; background: rgba(255,255,255,0.25); padding: 4px 12px; border-radius: 20px; font-weight: bold; backdrop-filter: blur(4px); }
 
-        /* コンテナ & カード */
-        .container { max-width: 600px; margin: 0 auto; padding: 15px; }
-        .card { background: var(--card-bg); border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border: 1px solid var(--border); }
-        .card-title { font-size: 1rem; font-weight: bold; margin-bottom: 10px; color: #334155; border-bottom: 2px solid #f1f5f9; padding-bottom: 8px; }
+        /* レイアウト */
+        .container { max-width: 600px; margin: 0 auto; padding: 20px 15px; }
+        .card { background: var(--card); border-radius: 20px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid var(--border); }
+        .card-head { font-size: 0.95rem; font-weight: bold; margin-bottom: 15px; color: #64748b; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
 
-        /* 入力フォーム */
-        input, select { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #cbd5e1; border-radius: 8px; background: #f8fafc; box-sizing: border-box; font-size: 1rem; }
-        input:focus { border-color: var(--primary); outline: none; background: white; }
+        /* フォーム */
+        input, select { width: 100%; padding: 14px; margin-bottom: 12px; border: 1px solid var(--border); border-radius: 12px; background: #f8fafc; box-sizing: border-box; font-size: 1rem; transition: 0.2s; }
+        input:focus { border-color: var(--primary); outline: none; background: white; box-shadow: 0 0 0 3px var(--primary-bg); }
 
-        /* ボタンデザイン (わかりやすく改修) */
-        button { width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 0.95rem; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; margin-bottom: 8px; }
-        button:active { transform: scale(0.98); opacity: 0.9; }
-        
-        .btn-main { background: var(--primary); color: white; }
-        .btn-sub  { background: #e2e8f0; color: #475569; }
-        .btn-danger { background: #fee2e2; color: #ef4444; }
-        
-        /* モードボタン (大きく見やすく) */
-        .mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-        .btn-mode { flex-direction: column; padding: 15px; height: 80px; font-size: 0.85rem; }
-        .btn-mode span { font-size: 1.5rem; margin-bottom: 5px; }
-        .mode-normal { background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; }
-        .mode-fast   { background: #fef3c7; color: #d97706; border: 1px solid #fde68a; }
-        .mode-voice  { background: #dcfce7; color: #16a34a; border: 1px solid #bbf7d0; }
+        /* ボタン */
+        button { width: 100%; padding: 14px; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 0.95rem; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; margin-bottom: 8px; }
+        button:active { transform: scale(0.97); }
+        .btn-main { background: var(--primary); color: white; box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.3); }
+        .btn-sub { background: #f1f5f9; color: #475569; }
+        .btn-danger { background: #fee2e2; color: var(--danger); }
+        .btn-success { background: #d1fae5; color: #065f46; }
+        .btn-sm { padding: 6px 14px; font-size: 0.8rem; width: auto; height: 36px; margin: 0; }
 
-        /* リスト表示 */
-        .item-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f1f5f9; }
-        .item-name { font-weight: bold; color: #334155; }
-        .tag { color: var(--primary); background: #e0e7ff; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; margin-left: 5px; }
-        
-        .box-row { padding: 15px; border-bottom: 1px solid #f1f5f9; cursor: pointer; position: relative; }
-        .box-row:last-child { border-bottom: none; }
-        .box-id { font-weight: bold; color: var(--primary); font-size: 1.1rem; }
-        .box-cat { font-size: 0.75rem; background: #f1f5f9; padding: 3px 8px; border-radius: 4px; color: #64748b; margin-left: 8px; }
-        
-        /* 強調表示 */
-        .hl { background: #fef08a; padding: 0 2px; border-radius: 2px; border: 1px solid #fde047; }
-        .alert-badge { background: #fee2e2; color: #b91c1c; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; display: none; margin-left: 5px; }
+        /* ボックス一覧 */
+        .box-row { padding: 16px; border-bottom: 1px solid #f1f5f9; cursor: pointer; position: relative; transition: background 0.2s; }
+        .box-row:active { background: #f8fafc; }
+        .box-id { font-weight: 900; color: var(--primary); font-size: 1.1rem; }
+        .box-cat { font-size: 0.75rem; background: var(--primary-bg); color: var(--primary); padding: 4px 10px; border-radius: 8px; font-weight: bold; margin-left: 8px; }
+        .alert-badge { background: #fef2f2; color: var(--danger); padding: 3px 8px; border-radius: 6px; font-size: 0.7rem; display: none; margin-left: 5px; font-weight: bold; border: 1px solid #fecaca; }
         .alert-badge.show { display: inline-block; }
 
-        /* ナビゲーション */
-        .nav { position: fixed; bottom: 0; left: 0; width: 100%; background: white; border-top: 1px solid #e2e8f0; display: flex; padding-bottom: env(safe-area-inset-bottom); z-index: 1000; box-shadow: 0 -4px 10px rgba(0,0,0,0.05); }
-        .nav-item { flex: 1; text-align: center; padding: 12px 0; color: #94a3b8; font-size: 0.7rem; cursor: pointer; }
-        .nav-item.active { color: var(--primary); font-weight: bold; }
-        .nav-icon { font-size: 1.5rem; display: block; margin-bottom: 4px; }
+        /* アイテムリスト */
+        .item-row { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 1px solid #f1f5f9; transition: all 0.5s; }
+        .item-content { flex: 1; }
+        .item-name { font-weight: bold; color: #334155; font-size: 1rem; }
+        .tag { color: #0284c7; background: #e0f2fe; padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; margin-left: 6px; }
+        .item-actions { display: flex; gap: 8px; }
+
+        /* ★検索ハイライト★ */
+        .hl { background: #fef08a; color: #854d0e; padding: 0 2px; border-radius: 2px; font-weight: bold; }
+
+        /* ★アイテム強調表示（ジャンプ時）★ */
+        .highlight-target { background-color: #fff7ed; border: 2px solid #f97316; border-radius: 8px; padding: 10px; animation: flash 1.5s ease-in-out; }
+        @keyframes flash {
+            0% { background-color: #ffedd5; transform: scale(1); }
+            50% { background-color: #fed7aa; transform: scale(1.02); }
+            100% { background-color: #fff7ed; transform: scale(1); }
+        }
+
+        /* 提案アラート */
+        .suggestion-alert { display: none; margin-bottom: 15px; background: #fffbeb; border: 1px solid #fde68a; padding: 12px; border-radius: 12px; font-size: 0.9rem; color: #92400e; line-height: 1.6; }
+        .jump-link { text-decoration: underline; cursor: pointer; color: #d97706; font-weight: bold; }
+        .jump-link:hover { color: #b45309; }
         
-        .view { display: none; }
-        .view.active { display: block; animation: fadeIn 0.2s; }
+        /* モーダル */
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; display: none; justify-content: center; align-items: flex-end; backdrop-filter: blur(4px); }
+        .modal-content { background: white; width: 100%; max-width: 600px; border-radius: 24px 24px 0 0; padding: 30px 20px; box-sizing: border-box; max-height: 85vh; overflow-y: auto; animation: slideUp 0.3s; }
+        @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+
+        /* 高速モードUI */
+        #fast-mode-ui { position: fixed; top:0; left:0; width:100%; height:100%; background: #000; z-index: 1500; display:none; flex-direction:column; }
+        #fast-video { width: 100%; height: 100%; object-fit: cover; opacity: 0.6; }
+        .fast-overlay { position: absolute; bottom: 0; width: 100%; background: linear-gradient(to top, #000, transparent); padding: 40px 20px; text-align: center; color: white; box-sizing: border-box; }
+        #fast-log { font-size: 1.4rem; color: #4ade80; margin-bottom: 20px; min-height: 1.5em; font-weight: bold; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+
+        /* ナビ */
+        .nav { position: fixed; bottom: 0; left: 0; width: 100%; background: white; border-top: 1px solid var(--border); display: flex; padding-bottom: env(safe-area-inset-bottom); z-index: 1000; box-shadow: 0 -5px 20px rgba(0,0,0,0.03); }
+        .nav-item { flex: 1; text-align: center; padding: 12px 0; color: #94a3b8; font-size: 0.7rem; cursor: pointer; transition: 0.2s; }
+        .nav-item.active { color: var(--primary); font-weight: bold; transform: translateY(-3px); }
+        .nav-icon { font-size: 1.6rem; display: block; margin-bottom: 4px; }
+        
+        .view { display: none; animation: fadeIn 0.2s; }
+        .view.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        /* UIパーツ */
-        #fast-mode-ui { position: fixed; top:0; left:0; width:100%; height:100%; background: #000; z-index: 1500; display:none; flex-direction:column; }
-        #fast-video { width: 100%; height: 100%; object-fit: cover; }
-        .fast-overlay { position: absolute; bottom: 0; width: 100%; background: rgba(0,0,0,0.8); padding: 30px 20px; text-align: center; color: white; box-sizing: border-box; }
-
-        /* 印刷設定 (厳密なA4 1枚設定) */
+        /* 印刷 */
         #print-area { display: none; }
         @media print {
             body * { visibility: hidden; }
             #print-area, #print-area * { visibility: visible; }
-            #print-area { 
-                position: absolute; top: 0; left: 0; width: 100%; height: 100vh;
-                margin: 0; padding: 10mm; box-sizing: border-box;
-                display: grid !important; 
-                grid-template-columns: 1fr 1fr; 
-                grid-template-rows: repeat(4, 1fr); 
-                gap: 10px; 
-            }
-            .print-card { 
-                border: 2px solid #000; border-radius: 8px; 
-                display: flex; flex-direction: column; align-items: center; justify-content: center; 
-                overflow: hidden; 
-            }
-            .print-id { font-size: 24pt; font-weight: bold; margin-bottom: 10px; }
-            
-            /* 単体印刷用の上書き */
-            #print-area.mode-single {
-                display: flex !important; align-items: center; justify-content: center;
-            }
-            #print-area.mode-single .print-card {
-                width: 80%; height: 60%; border: 4px solid #000;
-            }
-            #print-area.mode-single .print-id { font-size: 48pt; }
+            #print-area { position: absolute; top: 0; left: 0; width: 100%; height: 100vh; padding: 10mm; box-sizing: border-box; }
+            #print-area.mode-bulk { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(4, 1fr); gap: 10px; }
+            #print-area.mode-single { display: flex; justify-content: center; align-items: center; }
+            .print-card { border: 2px solid #000; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; border-radius: 8px; page-break-inside: avoid; }
+            .print-id { font-size: 2rem; font-weight: bold; margin-bottom: 10px; }
+            .mode-single .print-id { font-size: 4rem; }
         }
     </style>
 </head>
 <body>
 
 <!-- ログイン -->
-<div id="login-screen">
-    <div style="background:white; padding:30px; border-radius:20px; text-align:center; color:#333; width:80%; max-width:300px;">
-        <h2>🔐 ロック解除</h2>
-        <p style="font-size:0.8rem; color:#666; margin-bottom:15px;">パスワードを入力</p>
-        <input type="password" id="login-pass" placeholder="****" maxlength="8" style="width:100%; border:1px solid #ddd;">
-        <button class="btn-main" onclick="tryLogin()">解除</button>
-        <p id="login-msg" style="color:red; font-size:0.8rem; margin-top:10px;"></p>
-    </div>
+<div id="login-overlay">
+    <h2>🔒 Smart Box</h2>
+    <p style="opacity:0.8; margin-bottom:20px;">V12 Ultimate</p>
+    <input type="password" id="login-pass" placeholder="****" maxlength="8">
+    <button class="btn-main" style="width:240px; background:white; color:var(--primary);" onclick="login()">ロック解除</button>
+    <p id="login-msg" style="color:#fecaca; margin-top:15px; font-size:0.9rem;"></p>
 </div>
 
 <div class="header">
-    <h1>📦 Smart Box V7</h1>
-    <span id="sync-status" class="status-badge">Waiting</span>
+    <h1>📦 Smart Box V12</h1>
+    <span id="sync-status" class="sync-badge">Wait</span>
 </div>
 
 <div class="container">
 
-    <!-- 1. スキャン / 編集タブ -->
+    <!-- 1. スキャン & 編集 -->
     <div id="view-scan" class="view active">
-        <!-- スキャナー -->
         <div id="scan-ui" class="card">
-            <h3 style="text-align:center; margin:0 0 10px 0;">QRコードをスキャン</h3>
-            <div id="reader" style="border-radius:12px; overflow:hidden; background:black; min-height:250px;"></div>
-            <p style="text-align:center; font-size:0.85rem; color:#64748b; margin-top:15px;">カメラを許可してください</p>
+            <div class="card-head">QRコードをスキャン</div>
+            <div id="reader" style="border-radius:16px; overflow:hidden; background:black; min-height:250px;"></div>
+            <p style="text-align:center; font-size:0.85rem; color:#64748b; margin-top:15px;">※カメラを許可してください</p>
         </div>
 
-        <!-- 箱詳細画面 -->
+        <!-- 箱詳細 -->
         <div id="box-ui" class="card" style="display:none;">
-            <!-- ヘッダー -->
-            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #f1f5f9; padding-bottom:10px; margin-bottom:15px;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px;">
                 <div>
-                    <div id="disp-id" class="box-id" style="font-size:1.5rem;">BOX-ID</div>
-                    <div style="margin-top:5px;">
+                    <div id="disp-id" class="box-id" style="font-size:1.6rem;">BOX-000</div>
+                    <div style="margin-top:8px;">
                         <span id="disp-cat" class="box-cat" style="margin:0;">カテゴリ</span>
                         <span id="disp-alert" class="alert-badge">⚠️ 長期放置</span>
                     </div>
                 </div>
-                <button class="btn-sub" style="width:auto; padding:8px 12px;" onclick="printQR()">🖨️ 印刷</button>
+                <button class="btn-sub" style="width:auto; padding:10px;" onclick="printQR()">🖨️</button>
             </div>
             
-            <label style="font-size:0.85rem; color:#64748b;">保管場所</label>
-            <input type="text" id="inp-loc" placeholder="例: クローゼット" onchange="saveBox()">
+            <label style="font-size:0.85rem; font-weight:bold; color:#64748b;">保管場所</label>
+            <input type="text" id="inp-loc" placeholder="例: クローゼット上段" onchange="saveBox()">
             
-            <!-- アイテムリスト -->
-            <div class="card-title">中身リスト</div>
-            <div id="item-list-container" style="max-height:200px; overflow-y:auto; margin-bottom:20px; border:1px solid #e2e8f0; border-radius:8px; padding:10px;"></div>
+            <!-- 既存在庫の重複アラート -->
+            <div id="existing-dup-alert" class="suggestion-alert"></div>
 
-            <!-- 入力エリア -->
-            <div style="background:#f8fafc; padding:15px; border-radius:12px; border:1px solid #e2e8f0;">
-                <div class="card-title" style="border:none; padding:0;">アイテム追加</div>
+            <!-- リスト -->
+            <div class="card-head" style="margin-top:20px;">中身リスト</div>
+            <div id="item-list-container" style="max-height:300px; overflow-y:auto; border:1px solid var(--border); border-radius:12px; padding:10px; margin-bottom:20px;"></div>
+
+            <!-- 追加エリア -->
+            <div style="background:#f1f5f9; padding:20px; border-radius:16px;">
+                <div class="card-head" style="border:none; padding:0; margin-bottom:10px;">アイテム追加</div>
                 
-                <!-- 手動入力 -->
-                <div style="display:flex; gap:8px; margin-top:10px;">
-                    <input type="text" id="inp-name" placeholder="品名 #タグ" style="margin:0; flex:1;">
-                    <button class="btn-main" style="width:auto; margin:0; padding:0 20px;" onclick="addItem()">追加</button>
+                <div style="display:flex; gap:10px;">
+                    <input type="text" id="inp-name" placeholder="品名 (例: 電池 #備蓄)" style="margin:0; flex:1;">
+                    <button class="btn-main" style="width:auto; margin:0;" onclick="addItem()">追加</button>
                 </div>
 
-                <!-- スマート入力モード (旧デザイン風配置) -->
-                <p style="font-size:0.8rem; color:#64748b; margin-top:15px; text-align:center;">スマート入力モード</p>
-                <div class="mode-grid">
-                    <button class="btn-mode mode-normal" onclick="startNormalCamera()">
-                        <span>📷</span>
-                        通常AI識別
-                    </button>
-                    <button class="btn-mode mode-fast" onclick="startFastMode(false)">
-                        <span>🚀</span>
-                        高速(カメラ+音声)
-                    </button>
+                <div id="input-dup-alert" class="suggestion-alert" style="margin-top:10px;"></div>
+
+                <div style="margin-top:15px; font-size:0.8rem; color:#64748b; text-align:center;">スマート入力</div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:8px;">
+                    <button class="btn-success" onclick="startFastMode(false)">🚀 カメラ+音声</button>
+                    <button class="btn-success" onclick="startFastMode(true)">🎤 音声(連続)</button>
                 </div>
-                <button class="btn-mode mode-voice" style="width:100%; margin-top:10px; height:50px; flex-direction:row;" onclick="startVoiceOnlyMode()">
-                    <span>🎤</span> 音声のみモード
-                </button>
                 
-                <!-- AIカメラプレビューエリア -->
-                <div id="cam-ui" style="display:none; background:white; padding:10px; border-radius:8px; margin-top:10px; border:1px solid #ddd;">
-                    <video id="cam-video" autoplay playsinline muted style="width:100%; border-radius:8px;"></video>
-                    <div id="ai-hint" style="text-align:center; font-weight:bold; color:var(--primary); margin:8px 0;">解析中...</div>
+                <!-- AIカメラ -->
+                <div id="cam-ui" style="display:none; background:white; padding:15px; border-radius:16px; margin-top:15px; box-shadow:0 4px 10px rgba(0,0,0,0.1);">
+                    <video id="cam-video" autoplay playsinline muted style="width:100%; border-radius:12px;"></video>
+                    <div id="ai-hint" style="text-align:center; font-weight:bold; color:var(--primary); margin:10px 0;">解析中...</div>
                     <div style="display:flex; gap:10px;">
                         <button class="btn-main" onclick="snapAI()">決定</button>
                         <button class="btn-sub" onclick="stopCam()">閉じる</button>
@@ -203,78 +195,89 @@
                 </div>
             </div>
 
-            <div style="display:flex; gap:10px; margin-top:20px;">
+            <div style="display:flex; gap:10px; margin-top:25px;">
                 <button class="btn-sub" onclick="closeBox()">閉じる</button>
                 <button class="btn-danger" onclick="deleteBox()">箱を削除</button>
             </div>
         </div>
     </div>
 
-    <!-- 2. 一覧 & 検索タブ -->
+    <!-- 2. 一覧 & 検索 -->
     <div id="view-list" class="view">
-        
-        <!-- おすすめ箱 (どこに入れればいい？) -->
         <div class="card" style="background:#f0fdf4; border-color:#86efac;">
-            <div class="card-title" style="color:#15803d; border-color:#86efac;">💡 おすすめ箱検索 (どこ入れる？)</div>
-            <div style="display:flex; gap:8px;">
+            <div class="card-head" style="color:#166534; border-color:#bbf7d0;">🧹 これどこ？検索 (あいまい対応)</div>
+            <div style="display:flex; gap:10px;">
                 <input type="text" id="suggest-input" placeholder="品名 (例: ハサミ)" style="margin:0; background:white;">
-                <button class="btn-main" style="width:auto; margin:0; background:#16a34a;" onclick="findSuggestion()">提案</button>
+                <button class="btn-success" style="width:auto; margin:0;" onclick="findSuggestion()">検索</button>
             </div>
-            <div id="suggest-res" style="margin-top:10px; font-size:0.9rem; color:#14532d;"></div>
+            <div id="suggest-res" style="margin-top:15px; font-size:0.95rem; color:#14532d; line-height:1.6;"></div>
         </div>
 
-        <!-- ボックス検索 (あいまい検索) -->
         <div class="card">
-            <div class="card-title">📦 ボックス一覧 (探す)</div>
-            <input type="text" id="filter-input" placeholder="🔍 名前、場所、カテゴリで検索..." onkeyup="renderList()">
+            <div class="card-head">📦 ボックス一覧</div>
+            <input type="text" id="filter-input" placeholder="🔍 名前、場所、カテゴリ..." onkeyup="renderList()">
             <div id="list-container"></div>
         </div>
     </div>
 
-    <!-- 3. 設定タブ -->
+    <!-- 3. 設定 -->
     <div id="view-settings" class="view">
-        <div class="card">
-            <div class="card-title">🖨️ QR一括印刷</div>
-            <p style="font-size:0.9rem; color:#64748b; margin-bottom:15px;">
-                A4用紙1枚に8個のQRコードを印刷します。<br>
-                ※印刷画面で「1ページ」になるように調整済みです。
+        <div class="card" style="border:2px solid #f59e0b;">
+            <div class="card-head" style="color:#b45309;">⚠️ 管理ツール</div>
+            <p style="font-size:0.9rem; color:#b45309; margin-bottom:15px;">
+                全ボックスの中身を再分析し、カテゴリを自動設定し直します。<br>
+                ※実行には厳重な確認が必要です。
             </p>
+            <button class="btn-main" style="background:#f59e0b;" onclick="reCategorizeAll()">全ボックス自動カテゴリ整理</button>
+        </div>
+
+        <div class="card">
+            <div class="card-head">🖨️ QR一括印刷</div>
             <button class="btn-main" onclick="bulkPrint()">A4印刷プレビュー (8面)</button>
         </div>
         <div class="card">
-            <div class="card-title">☁️ データ管理</div>
+            <div class="card-head">☁️ データ管理</div>
             <button class="btn-sub" onclick="fetchData(true)">強制同期</button>
             <button class="btn-danger" onclick="logout()">ログアウト</button>
         </div>
     </div>
 </div>
 
-<!-- ナビゲーション -->
+<!-- ナビ -->
 <div class="nav">
     <div class="nav-item active" onclick="tab('scan')"><span class="nav-icon">📷</span>編集</div>
-    <div class="nav-item" onclick="tab('list')"><span class="nav-icon">🔎</span>検索/提案</div>
+    <div class="nav-item" onclick="tab('list')"><span class="nav-icon">🔎</span>検索</div>
     <div class="nav-item" onclick="tab('settings')"><span class="nav-icon">⚙️</span>設定</div>
+</div>
+
+<!-- モーダル: 引っ越し -->
+<div id="move-modal" class="modal">
+    <div class="modal-content">
+        <h3>🚚 アイテム移動</h3>
+        <p id="move-info" style="margin-bottom:15px; font-weight:bold; color:var(--primary);"></p>
+        <div id="move-list" style="max-height:300px; overflow-y:auto; border:1px solid var(--border); border-radius:12px; margin-bottom:15px;"></div>
+        <button class="btn-sub" onclick="document.getElementById('move-modal').style.display='none'">キャンセル</button>
+    </div>
 </div>
 
 <!-- 高速モードUI -->
 <div id="fast-mode-ui">
     <div style="flex:1; position:relative; overflow:hidden; display:flex; justify-content:center; align-items:center;">
         <video id="fast-video" autoplay playsinline muted></video>
-        <div id="voice-only-icon" style="display:none; font-size:5rem; color:white;">🎤</div>
+        <div id="voice-icon" style="display:none; font-size:6rem; color:white;">🎤</div>
         <div class="scan-line" id="scan-line"></div>
     </div>
     <div class="fast-overlay">
-        <div id="fast-log" style="color:#4ade80; font-family:monospace; margin-bottom:15px; font-size:1.2rem;">待機中...</div>
-        <button class="btn-sub" onclick="stopFastMode()">終了して保存</button>
+        <div id="fast-log">待機中...</div>
+        <button class="btn-sub" onclick="stopFastMode()">終了</button>
     </div>
 </div>
 
-<!-- 印刷用エリア -->
 <div id="print-area"></div>
 
 <script>
-    // ▼▼▼ GAS URL (ここを書き換えてください) ▼▼▼
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbwgy6T7BschsAXNxBEinbzdW8hrN6YBWHbhumMVE1o4WdrXJI9bTu58Sd09-vyIghxVWQ/exec";
+    // ▼▼▼ 設定エリア ▼▼▼
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbyDZTbB-x1eftkFIET5f7NhWuZqM6gvV23G1zmuoCwpdKJ4FDY417qdtNufOe8l8o52QA/exec";
     // ▲▲▲ ▲▲▲ ▲▲▲
 
     let localDB = {}; 
@@ -282,28 +285,34 @@
     let qrScanner = null;
     let aiModel = null;
     let password = localStorage.getItem('sb_pass') || "";
+    let moveTargetIdx = null;
+    let suggestedBoxId = null;
+    let targetHighlightItem = null; // ジャンプ後のハイライト用
 
-    // 辞書
-    const DICTIONARY = {
-        "文房具": ["ペン","鉛筆","消しゴム","定規","ハサミ","カッター","のり","テープ","ホッチキス","付箋","ノート","メモ"],
-        "衣類": ["服","シャツ","ズボン","パンツ","スカート","下着","靴下","コート","ジャケット","帽子","マフラー"],
-        "PC・ガジェット": ["PC","マウス","キーボード","モニター","ケーブル","USB","充電器","スマホ","電池","イヤホン"],
-        "キッチン": ["鍋","フライパン","皿","コップ","箸","スプーン","フォーク","洗剤","スポンジ","ラップ","食品","調味料"],
-        "日用品": ["ティッシュ","トイレットペーパー","洗剤","シャンプー","石鹸","歯ブラシ","マスク","薬","掃除機"],
-        "工具": ["ドライバー","レンチ","ネジ","ガムテープ","軍手","紐"],
-        "書類": ["契約書","通帳","印鑑","パスポート","年金","保険","証書"]
+    // 拡張辞書
+    const DICT = {
+        "PC・ガジェット": ["パソコン","PC","マウス","キーボード","モニター","ディスプレイ","ケーブル","USB","充電器","アダプタ","モバイルバッテリー","スマホ","iPhone","タブレット","iPad","イヤホン","ヘッドホン","スピーカー","マイク","ウェブカメラ","ルーター","HDD","SSD","SDカード","メモリ","電池","乾電池","ノートパソコン","デスクトップPC","ゲーミングPC","ミニPC","一体型PC","Chromebook","MacBook","Mac mini","iMac","Surface","トラックパッド","トラックボールマウス","ゲーミングマウス","メカニカルキーボード","テンキーパッド","マウスパッド","大型マウスパッド","スタンド","ノートPCスタンド","モニターアーム","タブレットスタンド","スマホスタンド","折りたたみスタンド","USBメモリ","USB-Cケーブル","Lightningケーブル","MicroUSBケーブル","HDMIケーブル","DisplayPortケーブル","LANケーブル","光ケーブル","延長コード","電源タップ","急速充電器","GaN充電器","ワイヤレス充電器","MagSafe充電器","Qi充電器","車載充電器","ACアダプタ","PD充電器","ドッキングステーション","USBハブ","USB-Cハブ","SDカードリーダー","microSDカード","CFカード","外付けHDD","外付けSSD","ポータブルSSD","NAS","RAIDケース","メモリモジュール","DDR4メモリ","DDR5メモリ","CPU","GPU","マザーボード","電源ユニット","PCケース","PCケースファン","CPUクーラー","簡易水冷クーラー","グラフィックボード","サウンドカード","キャプチャーボード","ビデオキャプチャー","OBS用カメラ","ウェブ会議用マイク","コンデンサーマイク","ダイナミックマイク","ワイヤレスイヤホン","完全ワイヤレスイヤホン","ノイズキャンセリングイヤホン","Bluetoothイヤホン","骨伝導イヤホン","ゲーミングヘッドセット","開放型ヘッドホン","密閉型ヘッドホン","ヘッドホンアンプ","DAC","スピーカーセット","サウンドバー","2.1chスピーカー","5.1chスピーカー","Bluetoothスピーカー","小型スピーカー","ゲーミングスピーカー","ウェブカメラHD","4Kウェブカメラ","会議用スピーカーフォン","スマートスピーカー","ヘッドセット","片耳ヘッドセット","VRヘッドセット","ARデバイス","スマートグラス","Fireタブレット","Androidタブレット","電子書籍リーダー","Kindle","電子ペーパー端末","スマートウォッチ","Apple Watch","Galaxy Watch","Fitbit","活動量計","防犯カメラ","ネットワークカメラ","見守りカメラ","ドライブレコーダー","カーオーディオ","カーナビ","車載ホルダー","ワイヤレスアダプタ","プロジェクター","ミニプロジェクター","家庭用プロジェクター","スクリーン","レーザーポインター","プレゼンリモコン","電卓","関数電卓","電子辞書","翻訳機","ワイヤレスルーター","メッシュWi-Fi","中継器","ONU","モデム","PoEアダプタ","LANスイッチ","Wi-Fiアダプタ","Bluetoothアダプタ","ホームサーバー","ミニサーバー","Raspberry Pi","Arduino","マイコンボード","電子工作キット","スマートリモコン","赤外線リモコン","シーリングライト（スマート）","IoTハブ","スマートプラグ","電源管理スマートタップ","温湿度計（スマート）","空気質センサー","防犯センサー","スマートロック","QRコードリーダー","バーコードリーダー","ラベルプリンター","小型プリンター","インクジェットプリンター","レーザープリンター","スキャナー","ポータブルスキャナー","A3スキャナー","フィルムスキャナー","コピー機","FAX","ペンタブレット","液晶ペンタブレット","スタイラスペン","Apple Pencil","Surfaceペン","スタイラスシート","ゲーミングチェア","ゲーミングデスク","モニターライト","デスクライト（USB）","PCクリーナー","エアダスター","キーボードカバー","ディスプレイカバー","バッテリーケース","スマホケース","強化ガラスフィルム","保護フィルム","プライバシーフィルム","ルーターケース","ケーブルボックス","ケーブルクリップ","結束バンド","面ファスナーケーブルタイ","ケーブルスリーブ","HDDケース","SSDケース","HDDスタンド","クローンスタンド","ACケーブル","電源コード","変換アダプタ","HDMI変換","USB変換","LAN変換アダプタ","M.2 SSD","NVMe SSD","SATA SSD","HDD 3.5インチ","HDD 2.5インチ","Blu-rayドライブ","DVDドライブ","光学ドライブ","外付けドライブ","外付けBDドライブ","電池パック","リチウムイオン電池","モバイルWi-Fi","ポケットWiFi","スマートタグ","AirTag","Tile","GPSトラッカー","ワイヤレスキーボード","折りたたみキーボード","片手キーボード","ゲーミングキーパッド","テンキーレスキーボード","静音キーボード","RGBキーボード","RGBマウス","ゲーミングマウスパッド","充電式マウス","縦型マウス","エルゴノミクスマウス","Bluetoothマウス"],
+        "衣類・ファッション": ["服","シャツ","ズボン","パンツ","スカート","下着","靴下","コート","ジャケット","帽子","マフラー","ベルト","手袋","スーツ","ネクタイ","鞄","バッグ","靴","ブーツ","サンダル","パジャマ"],
+        "文房具": ["ペン","ボールペン","鉛筆","消しゴム","定規","ハサミ","カッター","のり","テープ","ホッチキス","付箋","ノート","メモ","ファイル","バインダー","電卓","筆箱","クリップ","画鋲","修正テープ","封筒","手紙","便箋","シャープペンシル","コンパス","分度器","製図ペン","水性ペン","油性ペン","マーカー","蛍光ペン","筆ペン","万年筆","インク","替芯","芯ケース","スティックのり","液体のり","テープのり","マスキングテープ","両面テープ","セロハンテープ","ガムテープ","養生テープ","クリップボード","リングノート","方眼ノート","無地ノート","レポート用紙","ルーズリーフ","下敷き","えんぴつ削り","手動鉛筆削り","電動鉛筆削り","クーピー","色鉛筆","クレヨン","マーカーセット","蛍光マーカー","ホワイトボードマーカー","黒板用チョーク","ボードイレーザー","ホワイトボード","黒板","画用紙","色画用紙","厚紙","ケント紙","工作用紙","折り紙","画材セット","絵の具","パレット","筆洗い","水彩筆","丸筆","平筆","テープカッター","カッターマット","定規セット","三角定規","T定規","分度器セット","製図用シャーペン","製図消しゴム","デザインナイフ","紙用カッター","裁ちばさみ","布用ハサミ","安全ハサミ","カッティングボード","メッシュケース","ドキュメントファイル","クリアファイル","ポケットファイル","名刺ホルダー","カードケース","スケッチブック","メモパッド","手帳","ダイアリー","カレンダー","デスクマット","卓上カレンダー","スケジュール帳","IDカードホルダー","ネームタグ","名札","名札ケース","マグネット","強力マグネット","マグネットシート","掲示板ピン","ピンセット","ステープラー","ミニホッチキス","ステープル","ステープルリムーバー","パンチ","2穴パンチ","多穴パンチ","紙折り機","紙クリップ","ゼムクリップ","大型クリップ","ダブルクリップ","書類バサミ","ブックスタンド","ブックエンド","しおり","インデックスシール","ラベル","ラベルシール","宛名ラベル","分類ラベル","ネームシール","両面シール","透明シール","クラフト紙","封筒クラフト","長形封筒","角形封筒","茶封筒","カラー封筒","レターセット","ポストカード","はがき","切手","手紙用紙","芳名帳","領収書","伝票","会計伝票","出金伝票","メモ用紙","付箋セット","ロール付箋","インデックス付箋","蛍光付箋","透明付箋","布テープ","紙テープ","パイプファイル","キングファイル","フラットファイル","Z式ファイル","クリップファイル","蛇腹ファイル","証書ファイル","名刺ファイル","封かんテープ","梱包テープ","OPPテープ","クラフトテープ","ミシン目テープ","ナンバリング","スタンプ","日付スタンプ","シャチハタ","印鑑","印鑑ケース","朱肉","スタンプ台","印面クリーナー","パウチ","ラミネートフィルム","ラミネーター","コインケース","金庫","小型金庫","電卓関数電卓","ポケット電卓","暗算盤","そろばん","メジャー","巻尺","水平器","工作キット","針金","ワイヤー","紙粘土","軽量粘土","スチレンボード","のりスプレー","スプレー糊","両面シート","色テープ","飾りテープ","デコレーションシール","スタンプシール","ペーパーナイフ","レターオープナー","封筒スケール","書道筆","半紙","墨汁","すずり","文鎮","下敷き書道用","書道セット","裁縫セット(文具扱い)","糸切りばさみ","リッパー","工具セット小型","精密ドライバー","ルーペ","拡大鏡","拡大ルーペ","チェックルーペ","メタル定規","竹定規","アルミ定規","アクリル定規","ステンレス定規","マーカー定規","スクールセット","ポーチ","ペンケース布","ペンケースハード","ロールペンケース","立つペンケース","シザーケース","画材バッグ","工作バッグ","ミニノート","リングメモ","横罫メモ","無地メモ","スティックメモ","チェックリストメモ","伝票ホルダー","タックシール","値札シール","訂正印","ネームペン","マルチペン","色ボールペン","ジェルペン","ゲルインクペン","耐水ペン","極細ペン","筆記補助グリップ","鉛筆キャップ","鉛筆ホルダー","消しゴムカバー","練り消し","砂消しゴム","字消し板","カーボン紙","コピー紙","普通紙","写真用紙","光沢紙","耐水紙","名刺用紙","ラベル用紙","はがき用紙","カード用紙","印刷用紙","工作段ボール","ミニ段ボール","コルクボード","ブラックボード","掲示板","バインダーA4","バインダーB5","レタートレイ","書類ケース","PPケース","ツールボックス","スチール棚(文具収納)","デスクオーガナイザー","デスクトレー","小物入れ","引き出しケース","ホワイトボードシート","黒板シート","マグネットシート文具","クリーニングクロス","静電気除去ブラシ","スケールルーペ","テンプレート定規","サークルテンプレート","スクエアテンプレート"],
+        "日用品": ["ティッシュ","トイレットペーパー","洗剤","柔軟剤","シャンプー","リンス","石鹸","ボディソープ","歯ブラシ","歯磨き粉","カミソリ","タオル","バスタオル","ハンガー","洗濯バサミ","掃除機","コロコロ","ゴミ袋","消臭剤","芳香剤","カイロ","マスク","消毒液","スポンジ","食器洗い洗剤","ラップ","アルミホイル","キッチンペーパー","除菌シート","ウェットティッシュ","トング","まな板","フライパン","鍋","包丁","計量カップ","保存容器","布巾","洗濯ネット","宅配袋","ストロー","ジップ袋","トイレブラシ","トイレ用洗剤","お風呂用洗剤","カビ取り剤","メガネ拭き","電球","延長コード","スリッパ","玄関マット","ドアマット","靴用消臭剤","靴べら","傘","折り畳み傘","爪切り","耳かき","綿棒","コットン","ヘアブラシ","ヘアゴム","ヘアピン","化粧水","乳液","保湿クリーム","日焼け止め","リップクリーム","虫除けスプレー","虫刺され薬","常備薬","ばんそうこう","体温計","血圧計","加湿器","除湿剤","サーキュレーター","電気ストーブ","扇風機","ゴミ箱","ペットボトルホルダー","弁当箱","水筒","箸","スプーン","フォーク","マグカップ","掃除シート","バケツ","雑巾","ほうき","ちりとり","新聞紙","輪ゴム","クリップ","収納ボックス","衣類圧縮袋","ペン立て","壁掛けフック","突っ張り棒","除草剤","軍手","ビニール手袋","ゴム手袋","キッチンタイマー","氷袋","保冷剤","保温シート","ラベルシール","乾電池","充電電池","紐","テープ","養生テープ","ガムテープ","透明テープ","メモ帳","給水スポンジ","霧吹き","花瓶","植木鉢","土","肥料","防災ラジオ","懐中電灯","非常食","簡易トイレ","保存水","紙皿","紙コップ","割りばし","靴クリーム","ブラシ","フェイスシート","メイク落とし","洗顔フォーム","入浴剤","入浴剤袋クリップ","洗濯漂白剤","酸素系漂白剤","塩素系漂白剤","網戸用クリーナー","サッシブラシ","排水口ネット","排水口カバー","鍋敷き","鍋つかみ","コースター","箸置き","キッチンばさみ","ミトン","泡立て器","ピーラー","おたま","しゃもじ","ティースプーン","スープジャー","スポーツタオル","小物入れ","レターオープナー","ホッチキス","ホッチキス針","画鋲","マグネット","のり","修正テープ","瞬間接着剤","防犯ブザー","南京錠","ワイヤーロック","名札ケース","名刺ホルダー","写真立て","爪やすり","靴下留め","衣類ブラシ","洋服カバー","ランドリーバッグ","ハンドソープ","詰め替えパック","水切りネット","耐熱手袋","ラテックス手袋","裁縫セット","糸","針","ボタン","裁ちばさみ","防虫剤","除湿シート","アイロン","アイロン台","アイロン用スプレー","テーブルクロス","ランチョンマット","マルチカバー","カーテン","カーテンフック","レースカーテン","花粉対策スプレー","布用消臭スプレー","靴磨きセット","ペーパーナプキン","保冷バッグ","圧縮袋","バンドエイド","包帯","消毒綿","冷えピタ","湿布","温熱パッド","体操マット","ストレッチバンド","手提げ袋","ショッピングバッグ","保温マグ","洗濯ロープ","ロウソク","ライター","チャッカマン","スプレーボトル","レインコート","レインカバー","収納袋","傘袋","シューズケース","布製バッグ","ハンドミラー","卓上ミラー","クシ","ヘアスプレー","ムース","ワックス","シェービングフォーム","髭剃り替刃","洗顔泡立てネット","鼻毛カッター","マッサージローラー","体重計","バスマット","防カビくん","ドアストッパー","コードクリップ","ケーブルホルダー","ランタン","非常用ブランケット","ポリ袋","ポンプ","吸水クロス","マスキングテープ","防音シート","断熱シート","すべり止めマット","鍋用クリーナー","金たわし","たわし","メラミンスポンジ","油取り紙","湯たんぽ","シーツ","枕カバー","布団カバー","敷きパッド","掛け布団","毛布","ブランケット","蚊取り線香","電子蚊取り器","虫吸い取り器","ゴキブリホイホイ","殺虫剤","害虫忌避スプレー","網戸パッチ","ライトスタンド","卓上ライト","ブックエンド","古紙紐","紙バッグ","保湿ティッシュ","高吸水タオル","洗濯石鹸","皿洗いブラシ","食器用スポンジラック","排水溝ブラシ","自動洗浄タブレット","洗濯槽クリーナー","レンジ用クリーナー","換気扇クリーナー","油落としシート","こたつ布団","こたつ敷き","ガラスクリーナー","窓拭きシート","新聞ストッカー"],
+        "キッチン": ["鍋","フライパン","皿","コップ","箸","スプーン","フォーク","ラップ","アルミホイル","食品","調味料","水筒","弁当箱","保存容器","ボウル"],
+        "工具・DIY": ["ドライバー","レンチ","ネジ","ガムテープ","軍手","紐","接着剤","メジャー","ドリル","ペンチ"],
+        "趣味・おもちゃ": ["ゲーム","スイッチ","PS5","フィギュア","プラモ","ぬいぐるみ","本","漫画","CD","DVD","カメラ","楽器","楽譜","グッズ"],
+        "アウトドア": ["テント","寝袋","ランタン","椅子","リュック","雨具","自転車","釣り","クーラーボックス","寝袋"],
+        "季節用品": ["扇風機","ヒーター","ストーブ","こたつ","加湿器","クリスマス","正月","プール","浮き輪"],
+        "書類": ["契約書","保証書","説明書","通帳","印鑑","パスポート","マイナンバー","年金","保険","証書","ハガキ","名刺","成績表","卒業証書","在学証明書","健康診断書","出席簿","成績通知表","学費納入証明書","奨学金申請書","奨学金受給証明書","課題提出書類","レポート","論文","研究計画書","実習報告書","履歴書","志望理由書","推薦書","申込書","申請書","保護者同意書","出欠連絡表","学校通知","授業計画書","授業評価表","シラバス","試験問題","解答用紙","答案","模擬試験","問題集","答案コピー","課題提出フォーム","課題評価表","学習計画表","学習記録","宿題プリント","プリントアウト","教科書コピー","ノートまとめ","参考資料","読書感想文","読書記録","レポート用紙","作文用紙","ポートフォリオ","作品提出用紙","研究ノート","実験記録","実験報告書","観察記録","観察ノート","日誌","学級日誌","生活記録帳","学習記録帳","出席記録","行事参加記録","部活動記録","クラブ活動記録","成績管理表","評価表","通知票","保健記録","健康カード","予防接種証明書","歯科検診結果","眼科検診結果","学校便り","学年便り","クラス便り","行事案内","案内状","出欠確認表","イベント申込書","旅行申込書","修学旅行同意書","校外学習申込書","学校行事写真申込書","図書貸出カード","図書館利用申込書","図書返却表","貸出記録","読書ノート","学習プリント","漢字練習帳","計算プリント","問題プリント","学習チェック表","チェックリスト","確認表","調査票","アンケート用紙","アンケート結果","意見書","保護者連絡帳","保護者宛通知","学校連絡票","家庭連絡票","生活指導表","指導記録","教育相談記録","カウンセリング記録","面談記録","面接記録","学習相談記録","学校便覧","学年便覧","校則集","学校規則","学則","入学案内","進学案内","募集要項","入学試験要項","受験票","合格通知","不合格通知","入学手続き書類","入学願書","入学申込書","入学通知","入学許可証","学生証申請書","学生証","在学証明書発行申請書","卒業見込証明書","卒業見込通知書","卒業証明書発行申請書","卒業証書授与通知","資格取得証明書","資格申請書","免許証申請書","免許証","検定合格証書","検定受験票","検定成績通知","賞状","表彰状","推薦状","推薦書類","推薦依頼書","推薦意見書","課題シート","課題プリント","課題メモ","研究メモ","研究ノートコピー","プロジェクト計画書","プロジェクト報告書","プロジェクト成果物","プロジェクト資料","学会発表資料","発表スライド","発表原稿","発表要旨","論文要旨","論文原稿","研究概要","研究計画書提出用紙","レポート提出用紙","レポート表紙","レポート目次","参考文献リスト","引用文献リスト","文献カード","参考書リスト","読書メモ","読書ノート","図書館利用記録","図書貸出記録","実験ノートコピー","実験手順書","実験計画書","観察メモ","観察シート","観察表","観察記録簿","日誌コピー","学級通信","クラス新聞","学校新聞","広報誌","学年新聞","部活動新聞","部活動記録","部誌","部活日誌","活動日誌","行事報告書","旅行計画書","修学旅行計画書","校外学習報告書","校外学習計画書","文化祭計画書","文化祭報告書","体育祭計画書","体育祭報告書","委員会報告書","委員会計画書","生徒会書類","生徒会記録","委任状","照会状","依頼状","案内状コピー","出席確認書","欠席届","遅刻届","早退届","申請書コピー","報告書コピー","記録簿","記録用紙","メモ用紙","付箋","チェックシート","アンケートコピー","アンケート集計表","面接記録コピー","相談記録コピー","保護者宛連絡メモ","学校宛連絡メモ","行事参加確認書","申込書コピー","承諾書","同意書コピー","保護者署名用紙","誓約書","確認書","調査報告書","学習報告書","生活報告書","進学希望調査","進学希望用紙","奨学金応募書類","奨学金申請書コピー","給付決定通知","推薦状コピー","推薦依頼書コピー","推薦意見書コピー","資格取得申請書","資格取得報告書","免許申請書コピー","免許証コピー","検定申請書","検定結果通知","合格通知コピー","不合格通知コピー","入学手続き書類コピー","入学願書コピー","入学申込書コピー","入学通知コピー","入学許可証コピー","学生証申請書コピー","在学証明書発行申請書コピー","卒業見込証明書コピー","卒業見込通知書コピー","卒業証明書発行申請書コピー","卒業証書授与通知コピー","課題提出物","課題成果物","研究成果物","プロジェクト成果物コピー","発表資料コピー","論文コピー","レポートコピー","実験記録コピー","観察記録コピー","日誌コピー2","広報誌コピー","新聞コピー","部誌コピー","行事報告書コピー","委員会報告書コピー","生徒会書類コピー"]
     };
 
     window.onload = () => {
         if(password) {
-            document.getElementById('login-screen').style.display='none';
+            document.getElementById('login-overlay').style.display='none';
             fetchData();
         }
         renderList();
+        document.getElementById('inp-name').addEventListener('input', checkInputDuplicate);
     };
 
-    // --- 認証 ---
-    function tryLogin() {
+    function login() {
         const p = document.getElementById('login-pass').value;
         document.getElementById('login-msg').innerText = "認証中...";
         fetch(`${GAS_URL}?password=${p}`)
@@ -314,7 +323,8 @@
             } else {
                 password = p;
                 localStorage.setItem('sb_pass', p);
-                document.getElementById('login-screen').style.display='none';
+                document.getElementById('login-overlay').style.opacity = 0;
+                setTimeout(()=>document.getElementById('login-overlay').style.display='none', 300);
                 localDB = d;
                 renderList();
             }
@@ -322,7 +332,6 @@
     }
     function logout() { localStorage.removeItem('sb_pass'); location.reload(); }
 
-    // --- 通信 ---
     async function fetchData(force=false) {
         document.getElementById('sync-status').innerText = "Syncing...";
         try {
@@ -343,18 +352,16 @@
         } catch(e){ document.getElementById('sync-status').innerText = "Save Error"; }
     }
 
-    // --- UI ---
+    // --- UI制御 ---
     function tab(t) {
         document.querySelectorAll('.view').forEach(e=>e.classList.remove('active'));
         document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active'));
         document.getElementById('view-'+t).classList.add('active');
-        const idx = ['scan','list','settings'].indexOf(t);
-        document.querySelectorAll('.nav-item')[idx].classList.add('active');
+        document.querySelectorAll('.nav-item')[['scan','list','settings'].indexOf(t)].classList.add('active');
         if(t==='scan') setTimeout(startQR,300); else stopQR();
         if(t==='list') renderList();
     }
 
-    // --- QR処理 ---
     function startQR() {
         if(currentBoxId || qrScanner) return;
         const r = document.getElementById("reader");
@@ -374,7 +381,24 @@
         if(!localDB[id]) localDB[id] = { loc:"", items:[], category:"未分類", updated: new Date() };
         renderBoxUI();
     }
-    function closeBox() { currentBoxId=null; document.getElementById('box-ui').style.display='none'; document.getElementById('scan-ui').style.display='block'; setTimeout(startQR,300); }
+    
+    function closeBox() { 
+        currentBoxId=null; 
+        targetHighlightItem=null; // リセット
+        document.getElementById('box-ui').style.display='none'; 
+        document.getElementById('scan-ui').style.display='block'; 
+        setTimeout(startQR,300); 
+    }
+
+    // 箱へジャンプする関数
+    function jumpToBox(boxId, itemName) {
+        // 現在の箱を閉じる(UI上)
+        document.getElementById('box-ui').style.display='none';
+        // ターゲット設定
+        targetHighlightItem = itemName;
+        // 新しい箱を開く
+        openBox(boxId);
+    }
 
     function renderBoxUI() {
         const d = localDB[currentBoxId];
@@ -386,17 +410,117 @@
         if(diff > 365) document.getElementById('disp-alert').classList.add('show');
         else document.getElementById('disp-alert').classList.remove('show');
 
+        checkExistingDuplicates(d.items);
+
         const list = document.getElementById('item-list-container');
         list.innerHTML = "";
+        
         d.items.forEach((item, i) => {
             const row = document.createElement('div');
             row.className = "item-row";
             const tags = (item.t||[]).map(t=>`<span class="tag">${t}</span>`).join("");
+            
+            // 強調表示処理
+            if(targetHighlightItem && item.n === targetHighlightItem) {
+                row.classList.add('highlight-target');
+                setTimeout(() => row.scrollIntoView({behavior: "smooth", block: "center"}), 300);
+                targetHighlightItem = null; // 一度だけ
+            }
+
             row.innerHTML = `
-                <div class="item-name">${item.n} ${tags} <span style="font-weight:normal; font-size:0.8rem;">x${item.c}</span></div>
-                <button class="btn-sub" style="width:auto; padding:4px 10px; height:30px; margin:0;" onclick="delItem(${i})">削除</button>`;
+                <div class="item-content">
+                    <span class="item-name">${item.n} ${tags}</span>
+                </div>
+                <div class="item-actions">
+                    <button class="btn-sm btn-sub" onclick="openMoveModal(${i})">移動</button>
+                    <button class="btn-sm btn-danger" onclick="delItem(${i})">削除</button>
+                </div>`;
             list.appendChild(row);
         });
+    }
+
+    // --- 重複チェック (リンク機能付き) ---
+    function checkExistingDuplicates(items) {
+        const alertBox = document.getElementById('existing-dup-alert');
+        alertBox.style.display = 'none';
+        alertBox.innerHTML = "";
+        if(!items || items.length === 0) return;
+
+        let foundDupes = [];
+        for(let item of items) {
+            for(let bid of Object.keys(localDB)) {
+                if(bid === currentBoxId) continue;
+                // 部分一致チェック
+                if(localDB[bid].items.some(i => i.n.includes(item.n) || item.n.includes(i.n))) {
+                    // リンク付きメッセージを作成
+                    foundDupes.push(`💡 <span class="jump-link" onclick="jumpToBox('${bid}', '${item.n}')">${bid}</span> にも『${item.n}』と似たものがあります。`);
+                    if(foundDupes.length >= 3) break;
+                }
+            }
+            if(foundDupes.length >= 3) break;
+        }
+
+        if(foundDupes.length > 0) {
+            alertBox.innerHTML = foundDupes.join("<br>");
+            alertBox.style.display = 'block';
+        }
+    }
+
+    function checkInputDuplicate() {
+        const val = document.getElementById('inp-name').value.trim();
+        const alertDiv = document.getElementById('input-dup-alert');
+        if(val.length < 2) { alertDiv.style.display='none'; return; }
+        
+        suggestedBoxId = null;
+        let foundName = "";
+        
+        Object.keys(localDB).forEach(bid => {
+            if(bid === currentBoxId) return;
+            const match = localDB[bid].items.find(i => i.n.includes(val) || val.includes(i.n));
+            if(match) { suggestedBoxId = bid; foundName = match.n; }
+        });
+
+        if(suggestedBoxId) {
+            const cat = localDB[suggestedBoxId].category;
+            alertDiv.innerHTML = `💡 <b>${suggestedBoxId}</b> (${cat}) に似た物「${foundName}」があります。<br><u style="cursor:pointer" onclick="jumpToBox('${suggestedBoxId}', '${foundName}')">そこへ移動して確認</u>`;
+            alertDiv.style.display='block';
+        } else {
+            alertDiv.style.display='none';
+        }
+    }
+
+    // --- カテゴリ自動 ---
+    function autoCategorize(items) {
+        let scores = {};
+        items.forEach(itm => {
+            const txt = itm.n + (itm.t||[]).join("");
+            Object.keys(DICT).forEach(cat => {
+                if(DICT[cat].some(w => txt.includes(w))) scores[cat] = (scores[cat]||0)+1;
+            });
+        });
+        let max = 0, best = "未分類";
+        Object.keys(scores).forEach(c => { if(scores[c]>max){max=scores[c]; best=c;} });
+        if(best === "未分類" && localDB[currentBoxId].category !== "未分類") return localDB[currentBoxId].category;
+        return best;
+    }
+
+    function reCategorizeAll() {
+        if(!confirm("⚠️ 【警告】\n全ボックスのカテゴリを自動再設定します。\nよろしいですか？")) return;
+        if(!confirm("本当に実行しますか？\n取り消せません。")) return;
+        const u = prompt("実行するには「整理」と入力");
+        if(u !== "整理") { alert("キャンセルしました"); return; }
+        
+        let count = 0;
+        Object.keys(localDB).forEach(bid => {
+            const box = localDB[bid];
+            const newCat = autoCategorize(box.items);
+            if(newCat !== "未分類" && newCat !== box.category) {
+                box.category = newCat;
+                pushData({ action:'save', boxId:bid, location:box.loc, items:box.items, category:box.category });
+                count++;
+            }
+        });
+        alert(`${count}個のボックスを更新しました`);
     }
 
     // --- アイテム操作 ---
@@ -407,6 +531,8 @@
         const name = val.replace(/#[^\s]+/g, "").trim();
         localDB[currentBoxId].items.push({ n:name, c:1, t:tags });
         document.getElementById('inp-name').value = "";
+        document.getElementById('input-dup-alert').style.display='none';
+        localDB[currentBoxId].category = autoCategorize(localDB[currentBoxId].items);
         saveBox(); renderBoxUI();
     }
     function delItem(i) {
@@ -428,144 +554,134 @@
         pushData({ action:'save', boxId:currentBoxId, location:d.loc, items:d.items, category:d.category });
     }
 
-    // --- 検索機能 (分離版) ---
-    // 1. おすすめ箱検索 (提案)
-    function findSuggestion() {
-        const query = document.getElementById('suggest-input').value.trim();
-        const res = document.getElementById('suggest-res');
-        if(!query) return;
-        
-        let hits = [];
-        // カテゴリ推定
-        let targetCat = "";
-        Object.keys(DICTIONARY).forEach(cat => {
-            if(DICTIONARY[cat].some(w => query.includes(w))) targetCat = cat;
+    // --- 引っ越し ---
+    function openMoveModal(i) {
+        moveTargetIdx = i;
+        const itm = localDB[currentBoxId].items[i];
+        document.getElementById('move-info').innerText = `「${itm.n}」を移動`;
+        const list = document.getElementById('move-list'); list.innerHTML="";
+        Object.keys(localDB).forEach(bid => {
+            if(bid === currentBoxId) return;
+            const b = localDB[bid];
+            const div = document.createElement('div');
+            div.style.padding="12px"; div.style.borderBottom="1px solid #f1f5f9"; div.style.cursor="pointer";
+            div.innerHTML = `<b>${bid}</b> <span class="box-cat">${b.category}</span> <span style="font-size:0.8rem;color:#666">@${b.loc}</span>`;
+            div.onclick = () => {
+                localDB[bid].items.push(itm);
+                localDB[currentBoxId].items.splice(moveTargetIdx,1);
+                const d1 = localDB[currentBoxId];
+                pushData({ action:'save', boxId:currentBoxId, location:d1.loc, items:d1.items, category:d1.category });
+                const d2 = localDB[bid];
+                pushData({ action:'save', boxId:bid, location:d2.loc, items:d2.items, category:d2.category });
+                alert(`移動しました`); document.getElementById('move-modal').style.display='none'; renderBoxUI();
+            };
+            list.appendChild(div);
         });
+        document.getElementById('move-modal').style.display='flex';
+    }
+
+    // --- 検索 (ハイライト強化版) ---
+    function findSuggestion() {
+        const key = document.getElementById('suggest-input').value.trim().toLowerCase();
+        const res = document.getElementById('suggest-res');
+        if(!key) return;
+        let hits = [];
+        let words = [key];
+        Object.keys(DICT).forEach(c => { if(DICT[c].some(w=>w.includes(key))) words=words.concat(DICT[c]); });
 
         Object.keys(localDB).forEach(id => {
-            const box = localDB[id];
+            const b = localDB[id];
             let score = 0;
-            if(box.category === targetCat) score += 10;
-            if(box.category.includes(query)) score += 10;
-            if(box.items.some(i => i.n.includes(query))) score += 5;
-            if(score > 0) hits.push({ id, loc: box.loc, cat: box.category, score });
+            const content = b.items.map(i=>i.n.toLowerCase()).join(" ");
+            words.forEach(w => {
+                if(content.includes(w)) score += 10;
+                if(b.category.includes(w)) score += 5;
+            });
+            if(b.items.some(i => i.n.toLowerCase().includes(key))) score += 20;
+            if(score>0) hits.push({id, loc:b.loc, cat:b.category, score});
         });
-
-        hits.sort((a,b) => b.score - a.score);
-        if(hits.length > 0) {
-            res.innerHTML = "<b>💡 この箱がおすすめ:</b><br>" + hits.slice(0,3).map(h => 
-                `・<span style="color:var(--primary); font-weight:bold; cursor:pointer;" onclick="tab('scan'); openBox('${h.id}')">${h.id}</span> (${h.cat}) @${h.loc}`
+        
+        hits.sort((a,b)=>b.score-a.score);
+        if(hits.length>0) {
+            res.innerHTML = "<b>💡 おすすめ:</b><br>" + hits.slice(0,3).map(h=>
+                `・<u onclick="jumpToBox('${h.id}', '')" style="cursor:pointer;color:var(--primary);font-weight:bold;">${h.id}</u> (${h.cat}) @${h.loc}`
             ).join("<br>");
         } else {
-            res.innerText = "💡 該当する箱が見つかりません。新しい箱を使いましょう。";
+            res.innerHTML = "見つかりません。";
         }
     }
 
-    // 2. ボックス一覧検索 (あいまい検索)
     function renderList() {
         const key = document.getElementById('filter-input').value.toLowerCase();
-        const cont = document.getElementById('list-container');
-        cont.innerHTML="";
+        const c = document.getElementById('list-container'); c.innerHTML="";
         
-        // 辞書展開
         let words = [key];
-        if(key) {
-            Object.keys(DICTIONARY).forEach(cat => {
-                if(cat.includes(key) || DICTIONARY[cat].some(w=>w.includes(key))) {
-                    words = words.concat(DICTIONARY[cat]);
-                }
-            });
-        }
+        if(key) Object.keys(DICT).forEach(cat => { if(cat.includes(key)||DICT[cat].some(w=>w.includes(key))) words=words.concat(DICT[cat]); });
 
         Object.keys(localDB).forEach(id => {
             const d = localDB[id];
-            const boxStr = `${id} ${d.loc} ${d.category}`.toLowerCase();
-            const itmsStr = d.items.map(i=>i.n+(i.t||[]).join("")).join(" ").toLowerCase();
-            
-            let match = false;
-            if(!key) match=true;
-            else {
-                for(let w of words) {
-                    if(boxStr.includes(w) || itmsStr.includes(w)) { match=true; break; }
-                }
-            }
+            const txt = `${id} ${d.loc} ${d.category} ${d.items.map(i=>i.n).join(" ")}`.toLowerCase();
+            let match = !key;
+            if(key) for(let w of words) if(txt.includes(w)) match=true;
 
             if(match) {
                 const div = document.createElement('div');
                 div.className = "box-row";
-                const prev = d.items.slice(0,3).map(i=>i.n).join(", ")+(d.items.length>3?"...":"");
-                let locH = d.loc; if(key && locH.toLowerCase().includes(key)) locH = `<span class="hl">${locH}</span>`;
                 
+                // プレビュー生成時にハイライト処理
+                let prevItems = d.items.slice(0,3).map(i => {
+                    let name = i.n;
+                    if(key) {
+                        // 検索語(および関連語)が含まれていればハイライト
+                        for(let w of words) {
+                            if(name.toLowerCase().includes(w) && w.length > 0) {
+                                // 大文字小文字維持して置換
+                                const regex = new RegExp(`(${w})`, 'gi');
+                                name = name.replace(regex, '<span class="hl">$1</span>');
+                                break; // 1つの単語につき1回ハイライト
+                            }
+                        }
+                    }
+                    return name;
+                });
+                const prev = prevItems.join(", ") + (d.items.length>3?"...":"");
+
                 div.innerHTML = `
                     <div style="display:flex; justify-content:space-between;">
-                        <div><span class="box-id">${id}</span> <span class="box-cat">${d.category||'未'}</span></div>
-                        <div style="font-size:0.8rem; color:#64748b;">@${locH}</div>
+                        <div><span class="box-id">${id}</span> <span class="box-cat">${d.category}</span></div>
+                        <div style="font-size:0.8rem; color:#64748b;">@${d.loc}</div>
                     </div>
                     <div style="font-size:0.85rem; color:#334155; margin-top:5px;">${prev}</div>
                 `;
-                div.onclick = () => { tab('scan'); openBox(id); };
-                cont.appendChild(div);
+                div.onclick=()=>{ tab('scan'); openBox(id); };
+                c.appendChild(div);
             }
         });
     }
 
-    // --- カメラ/音声 (デザイン修正版) ---
-    let aiStream=null, lastVoiceT=0, lastSpoken="";
-    let isVoiceOnly=false;
-
-    async function startNormalCamera() {
-        if(!aiModel) aiModel = await mobilenet.load();
-        document.getElementById('cam-ui').style.display='block';
-        aiStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});
-        document.getElementById('cam-video').srcObject = aiStream;
-        loopAI();
-    }
-    async function loopAI() {
-        const v = document.getElementById('cam-video');
-        if(v.readyState===4 && document.getElementById('cam-ui').style.display!=='none') {
-            const p = await aiModel.classify(v);
-            if(p.length>0) document.getElementById('ai-hint').innerText = "AI予測: " + p[0].className;
-        }
-        if(aiStream) requestAnimationFrame(loopAI);
-    }
-    async function snapAI() {
-        const h = document.getElementById('ai-hint').innerText;
-        if(h.includes("AI予測:")) {
-            const en = h.split(": ")[1];
-            const res = await fetch(`${GAS_URL}?action=translate&text=${en}&password=${password}`);
-            const j = await res.json();
-            const n = prompt("登録名:", j.translated);
-            if(n) { localDB[currentBoxId].items.push({n:n,c:1,t:[]}); saveBox(); renderBoxUI(); stopCam(); }
-        }
-    }
-    function stopCam() { if(aiStream) aiStream.getTracks().forEach(t=>t.stop()); aiStream=null; document.getElementById('cam-ui').style.display='none'; }
+    // --- 高速モード ---
+    let aiStream=null, recognition=null;
+    let isVoiceOnly=false, lastSpoken="";
 
     async function startFastMode(voiceOnly) {
         isVoiceOnly = voiceOnly;
         if(!voiceOnly && !aiModel) aiModel = await mobilenet.load();
-
-        document.getElementById('fast-mode-ui').style.display = 'flex';
+        document.getElementById('fast-mode-ui').style.display='flex';
         const v = document.getElementById('fast-video');
-        const icon = document.getElementById('voice-only-icon');
-        const line = document.getElementById('scan-line');
-
+        const ico = document.getElementById('voice-icon');
+        
         if(voiceOnly) {
-            v.style.display='none'; line.style.display='none'; icon.style.display='block';
-            document.getElementById('fast-log').innerText = "音声待機中...";
+            v.style.display='none'; document.getElementById('scan-line').style.display='none'; ico.style.display='block';
+            document.getElementById('fast-log').innerText = "音声入力中...";
         } else {
-            v.style.display='block'; line.style.display='block'; icon.style.display='none';
+            v.style.display='block'; document.getElementById('scan-line').style.display='block'; ico.style.display='none';
             try {
-                aiStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                aiStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});
                 v.srcObject = aiStream;
-                loopFastAI();
+                loopAI();
             } catch(e){}
         }
-        startVoiceRec();
-    }
-    function startVoiceOnlyMode() { startFastMode(true); }
 
-    let recognition = null;
-    function startVoiceRec() {
         const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
         if(SR) {
             recognition = new SR();
@@ -573,58 +689,58 @@
             recognition.onend = () => { if(document.getElementById('fast-mode-ui').style.display==='flex') try{recognition.start()}catch(e){} };
             recognition.onresult = (e) => {
                 const t = e.results[e.results.length-1][0].transcript.trim();
-                handleFast(t, false);
+                handleFastInput(t, false);
             };
             try{recognition.start()}catch(e){}
         }
     }
 
-    async function loopFastAI() {
+    async function loopAI() {
         if(document.getElementById('fast-mode-ui').style.display==='none' || isVoiceOnly) return;
         const v = document.getElementById('fast-video');
-        const now = Date.now();
-        if(v.readyState===4 && (now - lastVoiceT > 1500)) {
-            const p = await aiModel.classify(v);
-            if(p.length>0 && p[0].probability>0.65) {
-                const ja = await translate(p[0].className);
-                if(Date.now() - lastVoiceT > 1500) handleFast(ja, true);
+        if(v.readyState===4) {
+            if(Math.random() < 0.05) {
+                const p = await aiModel.classify(v);
+                if(p.length>0 && p[0].probability>0.65) {
+                    const ja = await translate(p[0].className);
+                    handleFastInput(ja, true);
+                }
             }
         }
-        if(aiStream) requestAnimationFrame(loopFastAI);
+        if(aiStream) requestAnimationFrame(loopAI);
     }
-    async function translate(text) {
+    async function translate(t) {
         try {
-            const res = await fetch(`${GAS_URL}?action=translate&text=${text}&password=${password}`);
-            const j = await res.json();
-            return j.translated;
-        } catch(e){ return text; }
+            const r = await fetch(`${GAS_URL}?action=translate&text=${t}&password=${password}`);
+            const j = await r.json(); return j.translated;
+        } catch(e){return t;}
     }
-    function handleFast(t, isAI) {
+
+    function handleFastInput(t, isAI) {
         if(t==="終了") { stopFastMode(); return; }
-        if(t===lastSpoken) return;
-        if(!isAI) lastVoiceT = Date.now();
+        if(t===lastSpoken) return; 
         lastSpoken = t;
-        localDB[currentBoxId].items.push({n:t,c:1,t:[]});
-        document.getElementById('fast-log').innerText = `登録: ${t} ${isAI?'(AI)':'(音声)'}`;
+        localDB[currentBoxId].items.push({n:t, c:1, t:[]});
+        document.getElementById('fast-log').innerText = `登録: ${t}`;
+        localDB[currentBoxId].category = autoCategorize(localDB[currentBoxId].items);
     }
+
     function stopFastMode() {
         if(aiStream) aiStream.getTracks().forEach(t=>t.stop());
         if(recognition) recognition.stop();
-        aiStream = null;
-        document.getElementById('fast-mode-ui').style.display = 'none';
+        aiStream=null; recognition=null;
+        document.getElementById('fast-mode-ui').style.display='none';
         saveBox(); renderBoxUI();
     }
 
-    // --- 印刷 (A4 1枚 厳密対応) ---
+    // --- 印刷 ---
     function printQR() {
-        // 単体印刷
-        const a=document.getElementById('print-area'); a.style.display='block'; a.className='mode-single';
+        const a=document.getElementById('print-area'); a.style.display='flex'; a.className='mode-single';
         a.innerHTML=`<div class="print-card"><div class="print-id">${currentBoxId}</div><div id="pq"></div></div>`;
         new QRCode(document.getElementById("pq"),{text:currentBoxId,width:256,height:256});
         setTimeout(()=>{window.print();a.style.display='none'},500);
     }
     function bulkPrint() {
-        // 8面印刷
         const a=document.getElementById('print-area'); a.style.display='grid'; a.className='mode-bulk';
         a.innerHTML="";
         for(let i=0; i<8; i++) {
@@ -637,7 +753,6 @@
         }
         setTimeout(()=>{window.print();a.style.display='none'},500);
     }
-
 </script>
 </body>
 </html>
