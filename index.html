@@ -3,28 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Smart Box V3</title>
+    <title>Smart Box V4</title>
     
+    <!-- ライブラリ -->
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@latest"></script>
 
     <style>
-        :root { --primary: #2563eb; --accent: #f59e0b; --bg: #f3f4f6; --text: #1f2937; }
+        :root { --primary: #2563eb; --accent: #f59e0b; --danger: #ef4444; --bg: #f3f4f6; --text: #1f2937; }
         body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; margin: 0; padding: 0; background: var(--bg); color: var(--text); padding-bottom: 90px; user-select: none; }
+        
         header { background: var(--primary); color: white; padding: 15px; position: sticky; top: 0; z-index: 100; display:flex; justify-content:space-between; align-items:center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         h1 { margin: 0; font-size: 1.1rem; font-weight: 700; }
+        
         .container { max-width: 600px; margin: 0 auto; padding: 15px; }
         .card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.03); }
+        
         input, select { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #e5e7eb; border-radius: 8px; background: #f9fafb; box-sizing: border-box; font-size: 1rem; }
+        
         button { width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; font-size: 0.95rem; margin-bottom: 8px; display: flex; align-items: center; justify-content: center; gap: 8px; }
         button.primary { background: var(--primary); color: white; }
         button.accent { background: var(--accent); color: white; }
         button.secondary { background: #e5e7eb; color: #4b5563; }
+        button.danger { background: var(--danger); color: white; }
         button.icon-btn { width: auto; padding: 8px 12px; font-size: 1.2rem; background: transparent; color: var(--primary); border: 1px solid var(--primary); margin: 0; }
         button:active { transform: scale(0.98); opacity: 0.9; }
-        
+
+        /* タブ切替 */
         .view { display: none; animation: fadeIn 0.2s; }
         .view.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
@@ -34,11 +41,22 @@
         .nav-item.active { color: var(--primary); font-weight: bold; }
         .nav-icon { font-size: 1.4rem; display: block; margin-bottom: 2px; }
 
+        /* リスト・詳細系 */
         .item-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f3f4f6; }
         .num-circle { display: inline-flex; width: 22px; height: 22px; background: var(--primary); color: white; border-radius: 50%; font-size: 0.75rem; align-items: center; justify-content: center; margin-right: 8px; }
-        .box-row { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; }
+        
+        .box-row { padding: 15px; border-bottom: 1px solid #eee; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+        .box-tag { font-size: 0.75rem; background: #e0f2fe; color: #0284c7; padding: 2px 6px; border-radius: 4px; margin-left: 5px; }
 
-        /* 高速モードUI */
+        /* モーダル (詳細閲覧用) */
+        #detail-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; display: none; justify-content: center; align-items: flex-end; }
+        .modal-content { background: white; width: 100%; max-width: 600px; border-radius: 15px 15px 0 0; padding: 20px; box-sizing: border-box; max-height: 85vh; overflow-y: auto; animation: slideUp 0.3s; }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+        /* 提案ボックス */
+        #suggestion-area { background: #ecfdf5; border: 1px solid #6ee7b7; color: #065f46; padding: 10px; border-radius: 8px; margin-bottom: 15px; display: none; }
+
+        /* 高速/音声モードUI */
         #fast-mode-ui { position: fixed; top:0; left:0; width:100%; height:100%; background: #000; z-index: 1500; display:none; flex-direction:column; }
         #fast-video { width: 100%; height: 100%; object-fit: cover; }
         .fast-overlay { position: absolute; bottom: 0; width: 100%; background: rgba(0,0,0,0.8); padding: 20px; text-align: center; color: white; box-sizing: border-box; }
@@ -61,18 +79,18 @@
 <body>
 
 <header>
-    <h1>📦 Smart Box V3</h1>
+    <h1>📦 Smart Box V4</h1>
     <span id="status-badge" style="font-size:0.8rem; background:rgba(255,255,255,0.2); padding:2px 8px; border-radius:4px;">Ready</span>
 </header>
 
 <div class="container">
 
-    <!-- 1. スキャン & ボックス詳細 -->
+    <!-- 1. スキャン & 編集 (Edit Mode) -->
     <div id="view-scan" class="view active">
         <div id="scan-ui" class="card">
             <h3 style="text-align:center; margin:0 0 10px 0;">QRコードをスキャン</h3>
             <div id="reader" style="border-radius:8px; overflow:hidden; background:#000;"></div>
-            <p style="text-align:center; color:#666; font-size:0.8rem; margin-top:10px;">または下の「一覧」から選択</p>
+            <p style="text-align:center; color:#666; font-size:0.8rem; margin-top:10px;">編集・追加はここから</p>
         </div>
 
         <div id="box-ui" class="card" style="display:none;">
@@ -90,6 +108,7 @@
                 <div id="item-list"></div>
             </div>
 
+            <!-- アイテム追加エリア -->
             <div style="background:#f9fafb; padding:10px; border-radius:8px;">
                 <div style="display:flex; gap:5px; margin-bottom:10px;">
                     <input type="text" id="inp-bulk-name" placeholder="品名 (例: PC)" style="flex:2; margin:0;">
@@ -97,11 +116,14 @@
                     <button class="primary" onclick="addBulkItems()" style="width:auto; margin:0;">＋</button>
                 </div>
 
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <!-- モードボタン -->
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:10px;">
                     <button class="secondary" onclick="startNormalCamera()">📷 通常識別</button>
-                    <button class="accent" onclick="startFastMode()">🚀 音声優先</button>
+                    <button class="accent" onclick="startFastMode()">🚀 カメラ+音声</button>
                 </div>
+                <button class="primary" onclick="startVoiceOnlyMode()" style="background:#10b981;">🎤 音声のみモード</button>
                 
+                <!-- 通常カメラエリア -->
                 <div id="normal-camera-area" style="display:none; margin-top:10px;">
                     <video id="normal-video" autoplay playsinline muted style="width:100%; border-radius:8px;"></video>
                     <div id="ai-hint" style="text-align:center; font-size:0.9rem; color:var(--primary); margin:5px 0;">AI準備中...</div>
@@ -110,14 +132,27 @@
                 </div>
             </div>
             
-            <button class="secondary" onclick="closeBox()" style="margin-top:10px;">閉じる</button>
+            <div style="display:flex; gap:10px; margin-top:15px;">
+                <button class="secondary" onclick="closeBox()">閉じる</button>
+                <button class="danger" onclick="deleteBox()">🗑️ 箱を削除</button>
+            </div>
         </div>
     </div>
 
-    <!-- 2. 一覧画面 -->
+    <!-- 2. 一覧 & 検索 (List View) -->
     <div id="view-list" class="view">
         <div class="card">
-            <input type="text" id="filter-input" placeholder="🔍 名前、場所、IDで検索..." onkeyup="renderList()">
+            <!-- どこに入れる？提案機能 -->
+            <div style="background:#f0f9ff; padding:10px; border-radius:8px; border:1px solid #bae6fd; margin-bottom:10px;">
+                <label style="font-size:0.8rem; color:#0369a1; font-weight:bold;">どこに入れればいい？</label>
+                <div style="display:flex; gap:5px; margin-top:5px;">
+                    <input type="text" id="inp-suggest" placeholder="品名 (例: マウス)" style="margin:0;">
+                    <button class="primary" onclick="findSuggestion()" style="width:auto; margin:0;">検索</button>
+                </div>
+                <div id="suggestion-area"></div>
+            </div>
+
+            <input type="text" id="filter-input" placeholder="🔍 キーワード検索..." onkeyup="renderList()">
             <div id="list-container"></div>
         </div>
     </div>
@@ -136,19 +171,43 @@
 
 </div>
 
+<!-- ナビゲーション -->
 <div class="nav">
-    <div class="nav-item active" onclick="switchTab('scan')"><span class="nav-icon">📷</span>スキャン</div>
-    <div class="nav-item" onclick="switchTab('list')"><span class="nav-icon">📦</span>一覧</div>
+    <div class="nav-item active" onclick="switchTab('scan')"><span class="nav-icon">📷</span>編集/追加</div>
+    <div class="nav-item" onclick="switchTab('list')"><span class="nav-icon">📦</span>一覧/提案</div>
     <div class="nav-item" onclick="switchTab('settings')"><span class="nav-icon">⚙️</span>設定</div>
 </div>
 
+<!-- 詳細閲覧モーダル (Read-Only) -->
+<div id="detail-modal" onclick="closeDetailModal(event)">
+    <div class="modal-content">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h2 id="modal-id" style="margin:0; color:var(--primary);">BOX-ID</h2>
+            <span id="modal-cat" style="background:#eee; padding:4px 8px; border-radius:4px; font-size:0.8rem;">カテゴリ</span>
+        </div>
+        <p id="modal-loc" style="color:#666; margin:5px 0 15px 0;">場所</p>
+        
+        <div style="border-top:1px solid #eee; padding-top:10px;">
+            <ul id="modal-items" style="padding-left:20px; margin:0;"></ul>
+        </div>
+        
+        <div style="margin-top:20px; display:flex; gap:10px;">
+            <button class="primary" onclick="editFromModal()">✏️ 編集・追加する</button>
+            <button class="secondary" onclick="document.getElementById('detail-modal').style.display='none'">閉じる</button>
+        </div>
+    </div>
+</div>
+
+<!-- モードUI (高速/音声) -->
 <div id="fast-mode-ui">
-    <div style="flex:1; position:relative; overflow:hidden;">
+    <div style="flex:1; position:relative; overflow:hidden; display:flex; justify-content:center; align-items:center;">
         <video id="fast-video" autoplay playsinline muted></video>
-        <div class="scan-line"></div>
+        <!-- 音声のみモードの時はビデオを消してアイコンを出す -->
+        <div id="voice-only-icon" style="display:none; font-size:5rem; color:white;">🎤</div>
+        <div class="scan-line" id="scan-line"></div>
     </div>
     <div class="fast-overlay">
-        <div id="fast-log" style="color:#0f0; font-family:monospace; margin-bottom:10px;">音声: 待機中...</div>
+        <div id="fast-log" style="color:#0f0; font-family:monospace; margin-bottom:10px;">待機中...</div>
         <button class="secondary" onclick="stopFastMode()">終了して保存</button>
     </div>
 </div>
@@ -156,8 +215,8 @@
 <div id="print-area"></div>
 
 <script>
-    // ▼▼▼ ここにGASのURLを貼り付け ▼▼▼
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbyz0WctGJaJuhzUJxvMGUfX6asMQOygxuASZekhBJs-t3ghcvZafK0CxtUHlQJF7DLCiA/exec"; 
+    // ▼▼▼ GASのURLを貼り付け ▼▼▼
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbw_nQ2FQZD0G2YE8GRjGIDpRuOGCuZ6wyHSLo29b_25KIQNlM7Gv58aFvZVcGCDcWQU6w/exec"; 
     // ▲▲▲ ▲▲▲ ▲▲▲
 
     let localDB = {}; 
@@ -166,11 +225,12 @@
     let aiModel = null;
     let audioCtx = null;
 
+    // 初期化
     window.onload = async () => {
         if(GAS_URL.includes("URL")) alert("GASのURLを設定してください！");
-        await fetchData(); // 起動時に一覧データを取得する
+        await fetchData();
         initAudio();
-        renderList(); // 一覧を描画しておく
+        renderList();
     };
 
     function initAudio() {
@@ -187,7 +247,7 @@
         o.start(); o.stop(audioCtx.currentTime+0.1);
     }
 
-    // --- 通信処理 (保存修正版) ---
+    // --- 通信 ---
     async function fetchData(force=false) {
         document.getElementById('status-badge').innerText = "Syncing...";
         try {
@@ -198,20 +258,16 @@
         } catch(e) { document.getElementById('status-badge').innerText = "Error"; }
     }
 
-    async function pushData(boxId, loc, items, category="未分類") {
+    async function pushData(payload) {
         document.getElementById('status-badge').innerText = "Saving...";
         try {
-            // CORS対策のため、JSONではなくtext/plainとして送る
             await fetch(GAS_URL, {
                 method: 'POST',
                 headers: { "Content-Type": "text/plain" },
-                body: JSON.stringify({ boxId, location: loc, items, category, action: 'save' })
+                body: JSON.stringify(payload)
             });
             document.getElementById('status-badge').innerText = "Saved";
-        } catch(e) {
-            console.error(e);
-            document.getElementById('status-badge').innerText = "Save Error";
-        }
+        } catch(e) { document.getElementById('status-badge').innerText = "Save Error"; }
     }
 
     async function translate(text) {
@@ -222,7 +278,7 @@
         } catch(e) { return text; }
     }
 
-    // --- UI切り替え ---
+    // --- タブ切り替え ---
     function switchTab(tab) {
         document.querySelectorAll('.view').forEach(e => e.classList.remove('active'));
         document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
@@ -232,6 +288,7 @@
         if(tab==='list') renderList();
     }
 
+    // --- QR処理 ---
     function startQR() {
         if(currentBoxId) return;
         if(!qrScanner) {
@@ -249,11 +306,11 @@
         currentBoxId = id;
         document.getElementById('scan-ui').style.display = 'none';
         document.getElementById('box-ui').style.display = 'block';
-        if(!localDB[id]) localDB[id] = { loc: "", items: [], category: "新規" };
-        renderBoxDetail();
+        if(!localDB[id]) localDB[id] = { loc: "", items: [], category: "未分類" };
+        renderBoxEdit();
     }
 
-    function renderBoxDetail() {
+    function renderBoxEdit() {
         const d = localDB[currentBoxId];
         document.getElementById('disp-id').innerText = currentBoxId;
         document.getElementById('disp-cat').innerText = d.category || "未分類";
@@ -270,9 +327,7 @@
     }
 
     function getDupCount(item, arr, idx) {
-        let c = 0;
-        for(let i=0; i<=idx; i++) if(arr[i]===item) c++;
-        return c;
+        let c = 0; for(let i=0; i<=idx; i++) if(arr[i]===item) c++; return c;
     }
 
     function addBulkItems() {
@@ -280,22 +335,35 @@
         const count = parseInt(document.getElementById('inp-bulk-count').value);
         if(!name || count < 1) return;
         for(let i=0; i<count; i++) localDB[currentBoxId].items.push(name);
-        beep(); saveBox(); renderBoxDetail();
+        beep(); saveBox(); renderBoxEdit();
         document.getElementById('inp-bulk-name').value = "";
         document.getElementById('inp-bulk-count').value = 1;
     }
 
     function delItem(idx) {
-        if(confirm("削除しますか？")) {
+        if(confirm("このアイテムを削除しますか？")) {
             localDB[currentBoxId].items.splice(idx, 1);
-            saveBox(); renderBoxDetail();
+            saveBox(); renderBoxEdit();
         }
+    }
+
+    // --- 箱の削除 ---
+    async function deleteBox() {
+        if(!confirm(`本当に ${currentBoxId} を削除しますか？\n中身のデータも全て消えます。`)) return;
+        
+        // ローカルから削除
+        delete localDB[currentBoxId];
+        // サーバーへ削除依頼
+        await pushData({ boxId: currentBoxId, action: 'delete' });
+        
+        alert("削除しました");
+        closeBox();
     }
 
     function saveBox() {
         const d = localDB[currentBoxId];
         d.loc = document.getElementById('inp-loc').value;
-        pushData(currentBoxId, d.loc, d.items, d.category);
+        pushData({ boxId: currentBoxId, location: d.loc, items: d.items, category: d.category, action: 'save' });
     }
 
     function closeBox() {
@@ -305,8 +373,125 @@
         startQR();
     }
 
-    // --- カメラ / 通常識別 ---
-    let normalStream = null;
+    // --- 提案機能 (どこに入れればいい？) ---
+    function findSuggestion() {
+        const query = document.getElementById('inp-suggest').value.trim();
+        const area = document.getElementById('suggestion-area');
+        if(!query) return;
+
+        // 簡易マッチングロジック
+        // 1. カテゴリが一致しそうな箱
+        // 2. 似たアイテムが入っている箱
+        let candidates = [];
+        
+        // キーワードによる簡易カテゴリ推定
+        let targetCat = "";
+        if(query.match(/マウス|キーボード|PC|USB/i)) targetCat = "PC・ガジェット";
+        else if(query.match(/服|コート/)) targetCat = "衣類";
+        // ... (GAS側と同じロジックをJSでも持つとベターだが、今回は既存箱のカテゴリを頼る)
+
+        Object.keys(localDB).forEach(id => {
+            const box = localDB[id];
+            let score = 0;
+            // 同じカテゴリなら+10
+            if(box.category === targetCat) score += 10;
+            if(targetCat === "" && box.category !== "未分類" && box.category !== "その他") {
+                 // ターゲットカテゴリ不明でも、箱のカテゴリ名と入力が一致したら+10 (例: "ケーブル" という箱カテゴリ)
+                 if(box.category.includes(query)) score += 10;
+            }
+
+            // 中身に部分一致するアイテムがあれば+5
+            const hasSimilar = box.items.some(item => item.includes(query) || query.includes(item));
+            if(hasSimilar) score += 5;
+
+            if(score > 0) candidates.push({ id, loc: box.loc, cat: box.category, score });
+        });
+
+        candidates.sort((a,b) => b.score - a.score);
+
+        if(candidates.length > 0) {
+            area.style.display = "block";
+            area.innerHTML = "<b>💡おすすめの箱:</b><br>" + candidates.slice(0, 3).map(c => 
+                `・<a href="#" onclick="showDetailModal('${c.id}')">${c.id}</a> (${c.cat}) @${c.loc}`
+            ).join("<br>");
+        } else {
+            area.style.display = "block";
+            area.innerHTML = "💡一致する箱が見つかりませんでした。新しい箱に入れるか、近いカテゴリの箱を探してください。";
+        }
+    }
+
+    // --- 一覧 & 閲覧モード ---
+    function renderList() {
+        const k = document.getElementById('filter-input').value.toLowerCase();
+        const c = document.getElementById('list-container');
+        c.innerHTML = "";
+        
+        Object.keys(localDB).forEach(id => {
+            const d = localDB[id];
+            if(`${id} ${d.loc} ${d.items.join(' ')}`.toLowerCase().includes(k)) {
+                const div = document.createElement('div');
+                div.className = 'box-row';
+                // 一覧では中身を省略してスッキリさせる
+                const summary = d.items.length > 0 ? `${d.items[0]} 他${d.items.length-1}点` : "空";
+                
+                div.innerHTML = `
+                    <div>
+                        <div style="font-weight:bold; color:var(--primary);">${id} <span class="box-tag">${d.category||'未'}</span></div>
+                        <div style="font-size:0.85rem; color:#666;">@${d.loc}</div>
+                    </div>
+                    <div style="font-size:0.9rem; color:#333;">${summary}</div>
+                `;
+                // クリックしたら詳細閲覧モーダルへ (直接編集ではない)
+                div.onclick = () => showDetailModal(id);
+                c.appendChild(div);
+            }
+        });
+    }
+
+    function showDetailModal(id) {
+        const d = localDB[id];
+        document.getElementById('modal-id').innerText = id;
+        document.getElementById('modal-cat').innerText = d.category || "未分類";
+        document.getElementById('modal-loc').innerText = "保管場所: " + (d.loc || "未設定");
+        
+        const ul = document.getElementById('modal-items');
+        ul.innerHTML = "";
+        if(d.items.length === 0) {
+            ul.innerHTML = "<li style='color:#999'>中身はありません</li>";
+        } else {
+            d.items.forEach(item => {
+                const li = document.createElement('li');
+                li.innerText = item;
+                ul.appendChild(li);
+            });
+        }
+        
+        // 編集ボタン用にIDを記憶
+        currentBoxId = id; // ここでは仮置き
+        document.getElementById('detail-modal').style.display = "flex";
+    }
+
+    function closeDetailModal(e) {
+        if(e.target.id === 'detail-modal') {
+            document.getElementById('detail-modal').style.display = "none";
+            currentBoxId = null;
+        }
+    }
+
+    function editFromModal() {
+        document.getElementById('detail-modal').style.display = "none";
+        // 編集タブへ移動して開く
+        switchTab('scan');
+        openBox(currentBoxId);
+    }
+
+
+    // --- モード系 (通常/高速/音声のみ) ---
+    let normalStream=null, fastStream=null, recognition=null;
+    let lastVoiceT=0, lastSpoken="";
+    let isVoiceOnly = false;
+
+    // 通常カメラ
     async function startNormalCamera() {
         if(!aiModel) aiModel = await mobilenet.load();
         document.getElementById('normal-camera-area').style.display = 'block';
@@ -329,7 +514,7 @@
         if(h.includes("AI予測:")) {
             const ja = await translate(h.replace("AI予測: ", "").replace(" ?", ""));
             const n = prompt("登録名:", ja);
-            if(n) { localDB[currentBoxId].items.push(n); beep(); saveBox(); renderBoxDetail(); stopNormalCamera(); }
+            if(n) { localDB[currentBoxId].items.push(n); beep(); saveBox(); renderBoxEdit(); stopNormalCamera(); }
         }
     }
     function stopNormalCamera() {
@@ -338,115 +523,85 @@
         document.getElementById('normal-camera-area').style.display = 'none';
     }
 
-    // --- 高速モード (音声優先・連続対応) ---
-    let fastStream = null, recognition = null;
-    let lastVoiceTime = 0; // 音声入力があった時刻
-    let lastSpoken = "";
-    
-    async function startFastMode() {
-        if(!aiModel) aiModel = await mobilenet.load();
+    // 高速 & 音声のみモード共通
+    async function startFastMode(voiceOnly = false) {
+        isVoiceOnly = voiceOnly;
+        if(!voiceOnly && !aiModel) aiModel = await mobilenet.load();
+
         document.getElementById('fast-mode-ui').style.display = 'flex';
-        
-        // カメラ起動
         const v = document.getElementById('fast-video');
-        try {
-            fastStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-            v.srcObject = fastStream;
-        } catch(e) { console.log(e); }
-        
-        loopFastAI(); // AI監視開始
-        
-        // 音声認識開始
+        const icon = document.getElementById('voice-only-icon');
+        const line = document.getElementById('scan-line');
+
+        if(voiceOnly) {
+            // 音声のみ: カメラOFF, アイコン表示
+            v.style.display = 'none';
+            line.style.display = 'none';
+            icon.style.display = 'block';
+            document.getElementById('fast-log').innerText = "音声のみ: 待機中...";
+        } else {
+            // 通常高速: カメラON
+            v.style.display = 'block';
+            line.style.display = 'block';
+            icon.style.display = 'none';
+            try {
+                fastStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                v.srcObject = fastStream;
+                loopFastAI();
+            } catch(e){}
+        }
+
         const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
         if(SR) {
             recognition = new SR();
-            recognition.lang = 'ja-JP';
-            recognition.continuous = true; 
-            recognition.interimResults = false;
-            
-            // 重要: 音声認識が切れたら再起動する (連続対応)
-            recognition.onend = () => {
-                if(document.getElementById('fast-mode-ui').style.display === 'flex') {
-                    try { recognition.start(); } catch(e){}
-                }
-            };
-
+            recognition.lang = 'ja-JP'; recognition.continuous = true; recognition.interimResults = false;
+            recognition.onend = () => { if(document.getElementById('fast-mode-ui').style.display==='flex') try{recognition.start()}catch(e){} };
             recognition.onresult = (e) => {
-                const results = e.results;
-                const transcript = results[results.length-1][0].transcript.trim();
-                handleFast(transcript, false); // 音声として処理
+                const t = e.results[e.results.length-1][0].transcript.trim();
+                handleFast(t, false);
             };
-            try { recognition.start(); } catch(e){}
-        } else {
-            document.getElementById('fast-log').innerText = "※このブラウザは音声入力非対応";
+            try{recognition.start()}catch(e){}
         }
+    }
+
+    function startVoiceOnlyMode() {
+        startFastMode(true);
     }
 
     async function loopFastAI() {
-        if(document.getElementById('fast-mode-ui').style.display==='none') return;
+        if(document.getElementById('fast-mode-ui').style.display==='none' || isVoiceOnly) return;
         const v = document.getElementById('fast-video');
         const now = Date.now();
-
-        // カメラが準備OK、かつ 音声入力から1.5秒以上経過している場合のみAI判定を行う
-        // (音声入力を優先するため)
-        if(v.readyState===4 && (now - lastVoiceTime > 1500)) {
+        if(v.readyState===4 && (now - lastVoiceT > 1500)) {
             const p = await aiModel.classify(v);
             if(p.length>0 && p[0].probability>0.65) {
-                // AIの確信度が高い場合
-                const eng = p[0].className;
-                const ja = await translate(eng);
-                
-                // 再度チェック（翻訳中に音声が入ったかもしれない）
-                if(Date.now() - lastVoiceTime > 1500) {
-                    handleFast(ja, true); 
-                }
+                const ja = await translate(p[0].className);
+                if(Date.now() - lastVoiceT > 1500) handleFast(ja, true);
             }
         }
-        if(fastStream) requestAnimationFrame(loopFastAI); // ループ継続
+        if(fastStream) requestAnimationFrame(loopFastAI);
     }
 
-    function handleFast(text, isAI) {
-        if(text==="終了") { stopFastMode(); return; }
-        if(text===lastSpoken) return; // 直前と同じなら無視
-
-        // 音声入力の場合はタイムスタンプを更新し、AIを黙らせる
-        if(!isAI) lastVoiceTime = Date.now();
-
-        lastSpoken = text;
-        localDB[currentBoxId].items.push(text);
-        
-        const type = isAI ? "(AI)" : "🗣️(音声)";
-        document.getElementById('fast-log').innerText = `登録: ${text} ${type}`;
+    function handleFast(t, isAI) {
+        if(t==="終了") { stopFastMode(); return; }
+        if(t===lastSpoken) return;
+        if(!isAI) lastVoiceT = Date.now();
+        lastSpoken = t;
+        localDB[currentBoxId].items.push(t);
+        document.getElementById('fast-log').innerText = `登録: ${t} ${isAI?'(AI)':'(音声)'}`;
         beep();
     }
 
     function stopFastMode() {
         if(fastStream) fastStream.getTracks().forEach(t=>t.stop());
         if(recognition) recognition.stop();
+        fastStream = null;
         document.getElementById('fast-mode-ui').style.display = 'none';
-        saveBox(); renderBoxDetail();
-    }
-
-    // --- 一覧検索 ---
-    function renderList() {
-        const k = document.getElementById('filter-input').value.toLowerCase();
-        const c = document.getElementById('list-container');
-        c.innerHTML = "";
-        Object.keys(localDB).forEach(id => {
-            const d = localDB[id];
-            if(`${id} ${d.loc} ${d.items.join(' ')}`.toLowerCase().includes(k)) {
-                const div = document.createElement('div');
-                div.className = 'box-row';
-                div.innerHTML = `<div style="font-weight:bold;color:var(--primary);">${id} <span style="font-size:0.8rem;color:#666;">@${d.loc}</span></div><div style="font-size:0.85rem;">${d.items.slice(0,5).join(', ')}</div>`;
-                div.onclick = () => { switchTab('scan'); openBox(id); };
-                c.appendChild(div);
-            }
-        });
+        saveBox(); renderBoxEdit();
     }
 
     // --- 印刷 ---
     function printCurrentBoxQR() {
-        if(!currentBoxId) return;
         const area = document.getElementById('print-area');
         area.className = 'mode-single';
         area.innerHTML = `<div class="print-card"><div class="print-id">${currentBoxId}</div><div id="qr-single"></div></div>`;
