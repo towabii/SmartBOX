@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Smart Box Ultimate V2</title>
+    <title>Smart Box V3</title>
     
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -13,14 +13,10 @@
     <style>
         :root { --primary: #2563eb; --accent: #f59e0b; --bg: #f3f4f6; --text: #1f2937; }
         body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; margin: 0; padding: 0; background: var(--bg); color: var(--text); padding-bottom: 90px; user-select: none; }
-
-        /* レイアウト */
         header { background: var(--primary); color: white; padding: 15px; position: sticky; top: 0; z-index: 100; display:flex; justify-content:space-between; align-items:center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         h1 { margin: 0; font-size: 1.1rem; font-weight: 700; }
         .container { max-width: 600px; margin: 0 auto; padding: 15px; }
         .card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.03); }
-
-        /* UIパーツ */
         input, select { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #e5e7eb; border-radius: 8px; background: #f9fafb; box-sizing: border-box; font-size: 1rem; }
         button { width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; font-size: 0.95rem; margin-bottom: 8px; display: flex; align-items: center; justify-content: center; gap: 8px; }
         button.primary { background: var(--primary); color: white; }
@@ -28,8 +24,7 @@
         button.secondary { background: #e5e7eb; color: #4b5563; }
         button.icon-btn { width: auto; padding: 8px 12px; font-size: 1.2rem; background: transparent; color: var(--primary); border: 1px solid var(--primary); margin: 0; }
         button:active { transform: scale(0.98); opacity: 0.9; }
-
-        /* タブ・表示切替 */
+        
         .view { display: none; animation: fadeIn 0.2s; }
         .view.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
@@ -39,7 +34,6 @@
         .nav-item.active { color: var(--primary); font-weight: bold; }
         .nav-icon { font-size: 1.4rem; display: block; margin-bottom: 2px; }
 
-        /* リスト表示系 */
         .item-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f3f4f6; }
         .num-circle { display: inline-flex; width: 22px; height: 22px; background: var(--primary); color: white; border-radius: 50%; font-size: 0.75rem; align-items: center; justify-content: center; margin-right: 8px; }
         .box-row { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; }
@@ -50,41 +44,16 @@
         .fast-overlay { position: absolute; bottom: 0; width: 100%; background: rgba(0,0,0,0.8); padding: 20px; text-align: center; color: white; box-sizing: border-box; }
         .scan-line { position: absolute; top: 50%; width: 100%; height: 2px; background: cyan; box-shadow: 0 0 10px cyan; }
         
-        /* === 印刷設定 === */
+        /* 印刷 */
         #print-area { display: none; }
-        
         @media print {
             body * { visibility: hidden; }
             #print-area, #print-area * { visibility: visible; }
-            #print-area { 
-                position: absolute; top: 0; left: 0; width: 100%; height: 100vh; 
-                padding: 10px; box-sizing: border-box; 
-            }
-
-            /* 8面印刷モード (2列 x 4行) */
-            #print-area.mode-bulk {
-                display: grid; 
-                grid-template-columns: 1fr 1fr; 
-                grid-template-rows: repeat(4, 1fr); /* 4行に変更 */
-                gap: 15px; 
-            }
-
-            /* 単体印刷モード (中央1枚) */
-            #print-area.mode-single {
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                align-items: center;
-            }
-
-            .print-card { 
-                border: 2px solid #000; 
-                display: flex; flex-direction: column; align-items: center; justify-content: center; 
-                height: 100%; page-break-inside: avoid; border-radius: 8px;
-            }
+            #print-area { position: absolute; top: 0; left: 0; width: 100%; height: 100vh; padding: 10px; box-sizing: border-box; }
+            #print-area.mode-bulk { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(4, 1fr); gap: 15px; }
+            #print-area.mode-single { display: flex; flex-direction: column; justify-content: center; align-items: center; }
+            .print-card { border: 2px solid #000; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; page-break-inside: avoid; border-radius: 8px; }
             .print-id { font-size: 2rem; font-weight: bold; margin-bottom: 10px; }
-            
-            /* 単体印刷のときはさらに大きく */
             .mode-single .print-id { font-size: 4rem; margin-bottom: 30px; }
         }
     </style>
@@ -92,29 +61,26 @@
 <body>
 
 <header>
-    <h1>📦 Smart Box V2</h1>
-    <span id="status-badge" style="font-size:0.8rem; background:rgba(255,255,255,0.2); padding:2px 8px; border-radius:4px;">Sync OK</span>
+    <h1>📦 Smart Box V3</h1>
+    <span id="status-badge" style="font-size:0.8rem; background:rgba(255,255,255,0.2); padding:2px 8px; border-radius:4px;">Ready</span>
 </header>
 
 <div class="container">
 
     <!-- 1. スキャン & ボックス詳細 -->
     <div id="view-scan" class="view active">
-        <!-- スキャナー -->
         <div id="scan-ui" class="card">
             <h3 style="text-align:center; margin:0 0 10px 0;">QRコードをスキャン</h3>
             <div id="reader" style="border-radius:8px; overflow:hidden; background:#000;"></div>
-            <p style="text-align:center; color:#666; font-size:0.8rem; margin-top:10px;">箱のQRを読み取ってください</p>
+            <p style="text-align:center; color:#666; font-size:0.8rem; margin-top:10px;">または下の「一覧」から選択</p>
         </div>
 
-        <!-- 箱の中身画面 -->
         <div id="box-ui" class="card" style="display:none;">
             <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #eee; padding-bottom:10px; margin-bottom:10px;">
                 <div>
                     <div id="disp-id" style="font-size:1.4rem; font-weight:900; color:var(--primary);">BOX-ID</div>
                     <span id="disp-cat" style="font-size:0.8rem; background:#eee; padding:3px 8px; border-radius:4px;">カテゴリ</span>
                 </div>
-                <!-- 単体印刷ボタン -->
                 <button class="icon-btn" onclick="printCurrentBoxQR()">🖨️</button>
             </div>
             
@@ -133,7 +99,7 @@
 
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
                     <button class="secondary" onclick="startNormalCamera()">📷 通常識別</button>
-                    <button class="accent" onclick="startFastMode()">🚀 音声モード</button>
+                    <button class="accent" onclick="startFastMode()">🚀 音声優先</button>
                 </div>
                 
                 <div id="normal-camera-area" style="display:none; margin-top:10px;">
@@ -159,8 +125,7 @@
     <!-- 3. 設定・印刷 -->
     <div id="view-settings" class="view">
         <div class="card">
-            <h3>🖨️ QR一括印刷 (A4)</h3>
-            <p style="font-size:0.9rem; color:#666;">未使用IDを8個生成して印刷します。</p>
+            <h3>🖨️ QR一括印刷</h3>
             <button class="primary" onclick="generateBulkPrint()">A4印刷 (8面)</button>
         </div>
         <div class="card">
@@ -177,25 +142,23 @@
     <div class="nav-item" onclick="switchTab('settings')"><span class="nav-icon">⚙️</span>設定</div>
 </div>
 
-<!-- 高速モード -->
 <div id="fast-mode-ui">
     <div style="flex:1; position:relative; overflow:hidden;">
         <video id="fast-video" autoplay playsinline muted></video>
         <div class="scan-line"></div>
     </div>
     <div class="fast-overlay">
-        <div id="fast-log" style="color:#0f0; font-family:monospace; margin-bottom:10px;">待機中...</div>
-        <button class="secondary" onclick="stopFastMode()">終了</button>
+        <div id="fast-log" style="color:#0f0; font-family:monospace; margin-bottom:10px;">音声: 待機中...</div>
+        <button class="secondary" onclick="stopFastMode()">終了して保存</button>
     </div>
 </div>
 
-<!-- 印刷用エリア -->
 <div id="print-area"></div>
 
 <script>
-    // ▼▼▼ 設定エリア: GASのURLを貼り付け ▼▼▼
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbz-8sgey9IKDrB0bga-hnXD2gDsahEb2ZQEyIe_LmQF7MwBCy-bC5ldWflplIQkJV9kAQ/exec"; 
-    // ▲▲▲ 設定エリア ▲▲▲
+    // ▼▼▼ ここにGASのURLを貼り付け ▼▼▼
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbyz0WctGJaJuhzUJxvMGUfX6asMQOygxuASZekhBJs-t3ghcvZafK0CxtUHlQJF7DLCiA/exec"; 
+    // ▲▲▲ ▲▲▲ ▲▲▲
 
     let localDB = {}; 
     let currentBoxId = null;
@@ -205,8 +168,9 @@
 
     window.onload = async () => {
         if(GAS_URL.includes("URL")) alert("GASのURLを設定してください！");
-        await fetchData();
+        await fetchData(); // 起動時に一覧データを取得する
         initAudio();
+        renderList(); // 一覧を描画しておく
     };
 
     function initAudio() {
@@ -223,6 +187,7 @@
         o.start(); o.stop(audioCtx.currentTime+0.1);
     }
 
+    // --- 通信処理 (保存修正版) ---
     async function fetchData(force=false) {
         document.getElementById('status-badge').innerText = "Syncing...";
         try {
@@ -236,12 +201,17 @@
     async function pushData(boxId, loc, items, category="未分類") {
         document.getElementById('status-badge').innerText = "Saving...";
         try {
+            // CORS対策のため、JSONではなくtext/plainとして送る
             await fetch(GAS_URL, {
                 method: 'POST',
+                headers: { "Content-Type": "text/plain" },
                 body: JSON.stringify({ boxId, location: loc, items, category, action: 'save' })
             });
             document.getElementById('status-badge').innerText = "Saved";
-        } catch(e) { document.getElementById('status-badge').innerText = "Error"; }
+        } catch(e) {
+            console.error(e);
+            document.getElementById('status-badge').innerText = "Save Error";
+        }
     }
 
     async function translate(text) {
@@ -252,6 +222,7 @@
         } catch(e) { return text; }
     }
 
+    // --- UI切り替え ---
     function switchTab(tab) {
         document.querySelectorAll('.view').forEach(e => e.classList.remove('active'));
         document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
@@ -334,7 +305,7 @@
         startQR();
     }
 
-    // --- カメラ / 高速モード ---
+    // --- カメラ / 通常識別 ---
     let normalStream = null;
     async function startNormalCamera() {
         if(!aiModel) aiModel = await mobilenet.load();
@@ -367,42 +338,88 @@
         document.getElementById('normal-camera-area').style.display = 'none';
     }
 
-    let fastStream = null, recognition = null, lastSpoken = "", lastAiT = 0;
+    // --- 高速モード (音声優先・連続対応) ---
+    let fastStream = null, recognition = null;
+    let lastVoiceTime = 0; // 音声入力があった時刻
+    let lastSpoken = "";
+    
     async function startFastMode() {
         if(!aiModel) aiModel = await mobilenet.load();
         document.getElementById('fast-mode-ui').style.display = 'flex';
+        
+        // カメラ起動
         const v = document.getElementById('fast-video');
-        fastStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-        v.srcObject = fastStream;
-        loopFastAI();
+        try {
+            fastStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+            v.srcObject = fastStream;
+        } catch(e) { console.log(e); }
+        
+        loopFastAI(); // AI監視開始
+        
+        // 音声認識開始
         const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
         if(SR) {
             recognition = new SR();
-            recognition.lang = 'ja-JP'; recognition.continuous = true;
-            recognition.onresult = (e) => handleFast(e.results[e.results.length-1][0].transcript.trim());
-            try{recognition.start();}catch(e){}
+            recognition.lang = 'ja-JP';
+            recognition.continuous = true; 
+            recognition.interimResults = false;
+            
+            // 重要: 音声認識が切れたら再起動する (連続対応)
+            recognition.onend = () => {
+                if(document.getElementById('fast-mode-ui').style.display === 'flex') {
+                    try { recognition.start(); } catch(e){}
+                }
+            };
+
+            recognition.onresult = (e) => {
+                const results = e.results;
+                const transcript = results[results.length-1][0].transcript.trim();
+                handleFast(transcript, false); // 音声として処理
+            };
+            try { recognition.start(); } catch(e){}
+        } else {
+            document.getElementById('fast-log').innerText = "※このブラウザは音声入力非対応";
         }
     }
+
     async function loopFastAI() {
         if(document.getElementById('fast-mode-ui').style.display==='none') return;
         const v = document.getElementById('fast-video');
         const now = Date.now();
-        if(v.readyState===4 && now - lastAiT > 2000) {
+
+        // カメラが準備OK、かつ 音声入力から1.5秒以上経過している場合のみAI判定を行う
+        // (音声入力を優先するため)
+        if(v.readyState===4 && (now - lastVoiceTime > 1500)) {
             const p = await aiModel.classify(v);
             if(p.length>0 && p[0].probability>0.65) {
-                const ja = await translate(p[0].className);
-                handleFast(ja, true); lastAiT = now;
+                // AIの確信度が高い場合
+                const eng = p[0].className;
+                const ja = await translate(eng);
+                
+                // 再度チェック（翻訳中に音声が入ったかもしれない）
+                if(Date.now() - lastVoiceTime > 1500) {
+                    handleFast(ja, true); 
+                }
             }
         }
-        if(fastStream) requestAnimationFrame(loopFastAI);
+        if(fastStream) requestAnimationFrame(loopFastAI); // ループ継続
     }
-    function handleFast(t, isAI=false) {
-        if(t===lastSpoken || t==="終了") { if(t==="終了") stopFastMode(); return; }
-        lastSpoken = t;
-        localDB[currentBoxId].items.push(t);
-        document.getElementById('fast-log').innerText = `登録: ${t} ${isAI?'(AI)':''}`;
+
+    function handleFast(text, isAI) {
+        if(text==="終了") { stopFastMode(); return; }
+        if(text===lastSpoken) return; // 直前と同じなら無視
+
+        // 音声入力の場合はタイムスタンプを更新し、AIを黙らせる
+        if(!isAI) lastVoiceTime = Date.now();
+
+        lastSpoken = text;
+        localDB[currentBoxId].items.push(text);
+        
+        const type = isAI ? "(AI)" : "🗣️(音声)";
+        document.getElementById('fast-log').innerText = `登録: ${text} ${type}`;
         beep();
     }
+
     function stopFastMode() {
         if(fastStream) fastStream.getTracks().forEach(t=>t.stop());
         if(recognition) recognition.stop();
@@ -410,6 +427,7 @@
         saveBox(); renderBoxDetail();
     }
 
+    // --- 一覧検索 ---
     function renderList() {
         const k = document.getElementById('filter-input').value.toLowerCase();
         const c = document.getElementById('list-container');
@@ -426,29 +444,23 @@
         });
     }
 
-    // === 印刷機能 ===
+    // --- 印刷 ---
     function printCurrentBoxQR() {
         if(!currentBoxId) return;
         const area = document.getElementById('print-area');
-        area.className = 'mode-single'; // 単体モード
+        area.className = 'mode-single';
         area.innerHTML = `<div class="print-card"><div class="print-id">${currentBoxId}</div><div id="qr-single"></div></div>`;
         new QRCode(document.getElementById("qr-single"), { text: currentBoxId, width: 256, height: 256 });
         setTimeout(() => window.print(), 500);
     }
-
     function generateBulkPrint() {
         const area = document.getElementById('print-area');
-        area.className = 'mode-bulk'; // 8面モード
+        area.className = 'mode-bulk';
         area.innerHTML = "";
-        let count = 0;
-        let generated = [];
-        // 8枚生成
+        let count = 0; let generated = [];
         while(count < 8) {
             const rand = 'BOX-' + Math.floor(1000 + Math.random()*9000);
-            if(!localDB[rand] && !generated.includes(rand)) {
-                generated.push(rand);
-                count++;
-            }
+            if(!localDB[rand] && !generated.includes(rand)) { generated.push(rand); count++; }
         }
         generated.forEach(id => {
             const c = document.createElement('div');
