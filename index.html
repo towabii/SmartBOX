@@ -2,414 +2,519 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Box Cloud</title>
-    <!-- QRコード関連 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>AI Logistics Box</title>
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <!-- AI画像認識 -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@latest"></script>
-
+    
     <style>
-        :root { --primary: #007bff; --bg: #f4f7f6; }
-        body { font-family: sans-serif; margin: 0; padding: 0; background: var(--bg); padding-bottom: 80px; }
+        :root { --primary: #2563eb; --accent: #f59e0b; --bg: #f3f4f6; --text: #1f2937; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 0; background: var(--bg); color: var(--text); padding-bottom: 90px; user-select: none; }
         
-        /* ローディングオーバーレイ */
-        #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); z-index: 2000; display: flex; justify-content: center; align-items: center; flex-direction: column; display: none; }
-        .spinner { width: 40px; height: 40px; border: 4px solid #ddd; border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        /* ヘッダー & 通知 */
+        header { background: var(--primary); color: white; padding: 15px; position: sticky; top: 0; z-index: 100; display:flex; justify-content:space-between; align-items:center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { margin: 0; font-size: 1.1rem; font-weight: 700; }
+        .badge { background: var(--accent); color: white; padding: 3px 8px; border-radius: 10px; font-size: 0.7rem; font-weight: bold; }
+        
+        #toast { position: fixed; top: 70px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 10px 20px; border-radius: 20px; font-size: 0.9rem; display: none; z-index: 2000; }
 
-        header { background: var(--primary); color: white; padding: 15px; text-align: center; position: sticky; top: 0; z-index: 100; }
-        h1 { margin: 0; font-size: 1.2rem; }
+        /* コンテナ */
         .container { max-width: 600px; margin: 0 auto; padding: 15px; }
+        .card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.03); }
         
-        .card { background: white; border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        
-        input, button { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 6px; box-sizing: border-box; font-size: 1rem; }
-        input { border: 1px solid #ddd; background: #fafafa; }
-        button { border: none; background: var(--primary); color: white; cursor: pointer; }
-        button.secondary { background: #6c757d; }
-        button.danger { background: #dc3545; width: auto; padding: 5px 10px; font-size: 0.8rem; margin: 0; }
-        button.ai-btn { background: #28a745; display: flex; justify-content: center; gap: 8px; }
+        /* UIパーツ */
+        input, select { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #e5e7eb; border-radius: 8px; background: #f9fafb; box-sizing: border-box; font-size: 1rem; }
+        button { width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; font-size: 0.95rem; margin-bottom: 8px; }
+        button.primary { background: var(--primary); color: white; }
+        button.secondary { background: #e5e7eb; color: #4b5563; }
+        button.danger { background: #fee2e2; color: #dc2626; width: auto; padding: 5px 12px; font-size: 0.8rem; margin: 0; }
+        button:active { transform: scale(0.98); }
 
-        /* リストスタイル */
-        .box-header { display: flex; justify-content: space-between; border-bottom: 2px solid #eee; padding-bottom: 8px; margin-bottom: 10px; }
-        .box-id { font-weight: bold; color: var(--primary); font-size: 1.2rem; }
-        .item-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee; }
-        .item-num { background: #eee; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 0.8rem; margin-right: 8px; }
+        /* 高速モード用 */
+        .fast-mode-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: #000; z-index: 1500; display:none; flex-direction:column; }
+        .fast-video-container { flex: 1; position: relative; overflow: hidden; }
+        #fast-video { width: 100%; height: 100%; object-fit: cover; }
+        .fast-controls { padding: 20px; background: rgba(0,0,0,0.8); text-align: center; color: white; }
+        #fast-log { position: absolute; bottom: 10px; left: 10px; color: #0f0; font-family: monospace; font-size: 1rem; background: rgba(0,0,0,0.5); padding: 5px; border-radius: 5px; pointer-events: none; }
+        .scan-line { position: absolute; top: 50%; left: 0; width: 100%; height: 2px; background: cyan; box-shadow: 0 0 10px cyan; }
 
-        /* カメラ */
-        #reader { width: 100%; background: #000; border-radius: 8px; overflow: hidden; }
-        #ai-video { width: 100%; border-radius: 8px; display: none; }
+        /* リスト表示 */
+        .box-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f3f4f6; cursor: pointer; }
+        .box-tag { font-size: 0.75rem; color: #6b7280; background: #f3f4f6; padding: 2px 6px; border-radius: 4px; margin-right: 5px; }
+        .item-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f3f4f6; }
+        .num-circle { display: inline-flex; width: 20px; height: 20px; background: var(--primary); color: white; border-radius: 50%; font-size: 0.7rem; align-items: center; justify-content: center; margin-right: 8px; }
 
         /* ナビゲーション */
-        .nav { position: fixed; bottom: 0; left: 0; width: 100%; background: white; border-top: 1px solid #ddd; display: flex; padding-bottom: env(safe-area-inset-bottom); }
-        .nav-item { flex: 1; text-align: center; padding: 10px 0; color: #888; font-size: 0.8rem; cursor: pointer; }
+        .nav { position: fixed; bottom: 0; left: 0; width: 100%; background: white; border-top: 1px solid #e5e7eb; display: flex; padding-bottom: env(safe-area-inset-bottom); z-index: 1000; }
+        .nav-item { flex: 1; text-align: center; padding: 10px 0; color: #9ca3af; font-size: 0.7rem; cursor: pointer; }
         .nav-item.active { color: var(--primary); font-weight: bold; }
-        .nav-icon { font-size: 1.5rem; display: block; margin-bottom: 2px; }
+        .nav-icon { font-size: 1.4rem; display: block; margin-bottom: 2px; }
 
-        .view { display: none; }
+        /* その他 */
+        .view { display: none; animation: fadeIn 0.2s; }
         .view.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .recommendation-box { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; padding: 10px; border-radius: 8px; margin-bottom: 10px; font-size: 0.9rem; display: none; }
     </style>
 </head>
 <body>
 
-<!-- ローディング表示 -->
-<div id="loading-overlay">
-    <div class="spinner"></div>
-    <p id="loading-text">通信中...</p>
-</div>
+<!-- 通知トースト -->
+<div id="toast">保存しました</div>
 
 <header>
-    <h1>☁️ Smart Box Cloud</h1>
+    <h1>📦 AI Logistics</h1>
+    <div class="badge" id="storage-status">Syncing...</div>
 </header>
 
 <div class="container">
 
-    <!-- 1. スキャン画面 -->
+    <!-- 1. スキャン/ホーム画面 -->
     <div id="view-scan" class="view active">
         <div id="scan-ui" class="card">
-            <h3 style="text-align:center; margin-top:0;">QRコードをスキャン</h3>
-            <div id="reader"></div>
-            <p style="text-align:center; color:#666; font-size:0.8rem;">箱のQRコードを写してください</p>
+            <h3 style="text-align:center; margin:0 0 10px 0;">QRスキャン</h3>
+            <div id="reader" style="border-radius:8px; overflow:hidden; background:#000;"></div>
+            <p style="text-align:center; font-size:0.8rem; color:#666; margin-top:10px;">箱のQRを読み取ってください</p>
         </div>
 
+        <!-- 箱詳細画面 -->
         <div id="box-ui" class="card" style="display:none;">
-            <div class="box-header">
-                <span class="box-id" id="disp-id">BOX-ID</span>
-                <span style="font-size:0.9rem; background:#eee; padding:4px 8px; border-radius:10px;">合計: <span id="disp-count">0</span>点</span>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <span style="font-size:1.2rem; font-weight:bold; color:var(--primary);" id="disp-id">BOX-00</span>
+                <span class="box-tag" id="disp-category">未分類</span>
             </div>
             
-            <input type="text" id="inp-loc" placeholder="保管場所 (例: クローゼット)" onchange="saveBoxData()">
+            <input type="text" id="inp-loc" placeholder="保管場所 (例: クローゼット)" onchange="saveBox()">
             
-            <div id="item-list" style="max-height:300px; overflow-y:auto; margin-bottom:15px;"></div>
+            <!-- 中身リスト -->
+            <div style="max-height:250px; overflow-y:auto; margin-bottom:15px;">
+                <div id="item-list"></div>
+            </div>
 
-            <div style="border-top:2px dashed #ddd; padding-top:15px;">
-                <h4 style="margin:0 0 10px 0;">追加する</h4>
-                
-                <!-- AIカメラエリア -->
-                <video id="ai-video" autoplay playsinline muted></video>
-                <div id="ai-msg" style="text-align:center; font-size:0.8rem; color:#28a745; display:none;"></div>
-                
-                <button id="btn-ai-start" class="ai-btn" onclick="startAICamera()">
-                    <span>🤖 AIで自動入力 (翻訳付)</span>
-                </button>
-                <button id="btn-ai-snap" class="ai-btn" style="display:none; background:#ff9800;" onclick="identifyItem()">
-                    <span>📸 認識 & 翻訳！</span>
-                </button>
-
-                <div style="display:flex; gap:5px;">
-                    <input type="text" id="inp-item" placeholder="品名">
-                    <button onclick="addItem()" style="width:80px;">追加</button>
+            <div style="border-top:2px dashed #e5e7eb; padding-top:15px;">
+                <!-- スマート提案表示エリア -->
+                <div id="recommend-area" class="recommendation-box">
+                    💡 <b>提案:</b> <span id="rec-msg"></span>
                 </div>
+
+                <!-- 通常入力 -->
+                <div style="display:flex; gap:5px; margin-bottom:10px;">
+                    <input type="text" id="inp-item" placeholder="品名を入力..." oninput="checkRecommendation()">
+                    <button class="primary" style="width:80px;" onclick="addItemManually()">追加</button>
+                </div>
+
+                <button class="primary" onclick="startFastMode()" style="background: linear-gradient(45deg, #2563eb, #8b5cf6);">
+                    🚀 高速入箱モード (カメラ+音声)
+                </button>
             </div>
             <button class="secondary" onclick="closeBox()">閉じる</button>
         </div>
     </div>
 
-    <!-- 2. 検索画面 -->
-    <div id="view-search" class="view">
+    <!-- 2. ボックス一覧画面 -->
+    <div id="view-list" class="view">
         <div class="card">
-            <input type="text" id="search-key" placeholder="🔍 キーワード検索..." onkeyup="renderSearchResults()">
-            <div id="search-res"></div>
+            <input type="text" id="filter-input" placeholder="🔍 名前、場所、中身で検索..." onkeyup="renderBoxList()">
+            <div id="box-list-container"></div>
         </div>
     </div>
 
-    <!-- 3. QR作成 -->
+    <!-- 3. QR作成・設定 -->
     <div id="view-settings" class="view">
         <div class="card">
-            <h3>QRコード作成</h3>
+            <h3>QRコード発行</h3>
             <input type="text" id="new-id" readonly>
-            <div id="qrcode-display" style="display:flex; justify-content:center; margin:15px;"></div>
-            <button onclick="createQR()">ID発行</button>
+            <div id="qrcode-display" style="display:flex; justify-content:center; padding:10px;"></div>
+            <button class="primary" onclick="createQR()">ID発行</button>
         </div>
         <div class="card">
-            <p>※データはGoogleスプレッドシートに保存されます。</p>
-            <button class="secondary" onclick="fetchAllData(true)">強制データ更新</button>
+            <button class="secondary" onclick="fetchData(true)">☁️ データを強制更新</button>
         </div>
     </div>
 </div>
 
+<!-- 高速モード UI -->
+<div id="fast-mode-ui" class="fast-mode-overlay">
+    <div class="fast-video-container">
+        <video id="fast-video" autoplay playsinline muted></video>
+        <div class="scan-line"></div>
+        <div id="fast-log">待機中...</div>
+    </div>
+    <div class="fast-controls">
+        <p style="margin:0 0 10px 0; font-size:0.9rem;">品物をカメラに見せるか、音声で話してください。<br>「完了」と言うかボタンで終了。</p>
+        <button class="danger" onclick="stopFastMode()">終了して保存</button>
+    </div>
+</div>
+
+<!-- ナビゲーション -->
 <div class="nav">
     <div class="nav-item active" onclick="switchTab('scan')"><span class="nav-icon">📷</span>スキャン</div>
-    <div class="nav-item" onclick="switchTab('search')"><span class="nav-icon">🔎</span>検索</div>
+    <div class="nav-item" onclick="switchTab('list')"><span class="nav-icon">📦</span>一覧</div>
     <div class="nav-item" onclick="switchTab('settings')"><span class="nav-icon">⚙️</span>設定</div>
 </div>
 
 <script>
-    // ==========================================
-    // ▼ ここにGASのWebアプリURLを貼り付けてください ▼
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwXbL-a1Ec02n1C2Qt8loQO6g_BsNh2n1cFk9LETBazpk7_m2KRKrOUGbS-ZbiAvb8XNA/exec"; 
-    // ==========================================
+    // ▼▼▼ 設定エリア ▼▼▼
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbz-8sgey9IKDrB0bga-hnXD2gDsahEb2ZQEyIe_LmQF7MwBCy-bC5ldWflplIQkJV9kAQ/exec"; 
+    // ▲▲▲ 設定エリア ▲▲▲
 
-    let localDB = {}; // データの一時キャッシュ
+    let localDB = {}; // { "BOX-1": { loc: "", items: [], category: "" } }
     let currentBoxId = null;
-    let html5QrcodeScanner = null;
+    let qrScanner = null;
     let aiModel = null;
-    let aiStream = null;
+    
+    // 高速モード用変数
+    let fastStream = null;
+    let isFastMode = false;
+    let recognition = null; // 音声認識
+    let lastSpokenItem = "";
+    let lastAiItem = "";
+    let lastAiTime = 0;
 
     // --- 初期化 ---
-    window.onload = function() {
-        if(GAS_API_URL === "ここにURLを貼り付け") {
-            alert("コード内のGAS_API_URLに発行されたURLを設定してください！");
-        } else {
-            fetchAllData(); // 起動時にデータを取得
-        }
+    window.onload = async () => {
+        if(GAS_URL.includes("URL")) alert("GASのURLを設定してください");
+        await fetchData();
         createQR();
+        initSpeech();
     };
 
-    // --- 通信関連 ---
-    function showLoading(msg) {
-        document.getElementById('loading-text').innerText = msg;
-        document.getElementById('loading-overlay').style.display = 'flex';
-    }
-    function hideLoading() {
-        document.getElementById('loading-overlay').style.display = 'none';
+    function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.innerText = msg;
+        t.style.display = 'block';
+        setTimeout(()=> t.style.display='none', 2000);
     }
 
-    async function fetchAllData(force = false) {
-        if(force) showLoading("データ同期中...");
+    // --- データ通信 ---
+    async function fetchData(force=false) {
+        document.getElementById('storage-status').innerText = "Sync...";
         try {
-            const res = await fetch(GAS_API_URL);
+            const res = await fetch(GAS_URL);
             localDB = await res.json();
-            if(force) {
-                alert("データを最新にしました");
-                renderSearchResults();
-            }
+            document.getElementById('storage-status').innerText = "Ready";
+            if(force) { showToast("更新完了"); renderBoxList(); }
         } catch(e) {
-            console.error(e);
-            if(force) alert("通信エラーが発生しました");
-        } finally {
-            if(force) hideLoading();
+            document.getElementById('storage-status').innerText = "Error";
         }
     }
 
-    async function pushBoxData(id, loc, items) {
-        showLoading("クラウドに保存中...");
-        // 先にローカルキャッシュを更新して表示を速くする
-        localDB[id] = { loc: loc, items: items };
-        
+    async function pushData(boxId, loc, items, category="未分類") {
+        document.getElementById('storage-status').innerText = "Saving...";
         try {
-            const payload = { boxId: id, location: loc, items: items };
-            await fetch(GAS_API_URL, {
-                method: 'POST',
-                body: JSON.stringify(payload)
-            });
-        } catch(e) {
-            alert("保存に失敗しました。ネット接続を確認してください。");
-        } finally {
-            hideLoading();
-        }
-    }
-
-    // AI翻訳用
-    async function translateText(text) {
-        showLoading("AIが翻訳中...");
-        try {
-            // GAS経由で翻訳
-            const url = `${GAS_API_URL}?action=translate&text=${encodeURIComponent(text)}`;
-            const res = await fetch(url);
+            const payload = { boxId, location: loc, items, category, action: 'save' };
+            const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
             const json = await res.json();
-            return json.translated || text;
+            // サーバー側で判定されたカテゴリを反映
+            if(localDB[boxId]) localDB[boxId].category = json.category;
+            renderBoxHeader(); 
+            document.getElementById('storage-status').innerText = "Saved";
         } catch(e) {
-            return text; // 失敗したら英語のまま返す
-        } finally {
-            hideLoading();
+            document.getElementById('storage-status').innerText = "Error";
         }
     }
 
-    // --- UI操作 ---
+    async function sendLearningData(english, japanese) {
+        // AIの誤判定を修正したときに学習データを送る
+        fetch(GAS_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: 'learn', english, japanese })
+        });
+    }
+
+    // --- タブ切り替え ---
     function switchTab(tab) {
         document.querySelectorAll('.view').forEach(e => e.classList.remove('active'));
         document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
-        document.getElementById('view-' + tab).classList.add('active');
+        document.getElementById('view-'+tab).classList.add('active');
         
-        const tabs = ['scan', 'search', 'settings'];
-        document.querySelectorAll('.nav-item')[tabs.indexOf(tab)].classList.add('active');
+        const idx = ['scan','list','settings'].indexOf(tab);
+        document.querySelectorAll('.nav-item')[idx].classList.add('active');
 
-        if(tab === 'scan') startScanner(); else stopScanner();
-        if(tab === 'search') renderSearchResults();
+        if(tab==='scan') startQR(); else stopQR();
+        if(tab==='list') renderBoxList();
     }
 
-    // --- QRスキャン ---
-    function startScanner() {
+    // --- QR処理 ---
+    function startQR() {
         if(currentBoxId) return;
-        if(!html5QrcodeScanner) {
-            html5QrcodeScanner = new Html5Qrcode("reader");
-            html5QrcodeScanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, 
-            (decodedText) => {
-                openBox(decodedText);
-            }).catch(e=>{});
+        if(!qrScanner) {
+            qrScanner = new Html5Qrcode("reader");
+            qrScanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, 
+            (decoded) => openBox(decoded)).catch(()=>{});
         }
     }
-    function stopScanner() {
-        if(html5QrcodeScanner) {
-            html5QrcodeScanner.stop().then(() => { html5QrcodeScanner.clear(); html5QrcodeScanner = null; }).catch(e=>{});
-        }
+    function stopQR() {
+        if(qrScanner) qrScanner.stop().then(()=>{ qrScanner.clear(); qrScanner=null; }).catch(()=>{});
     }
 
-    // --- 箱を開く ---
+    // --- ボックス操作 ---
     function openBox(id) {
-        stopScanner();
+        stopQR();
         currentBoxId = id;
         document.getElementById('scan-ui').style.display = 'none';
         document.getElementById('box-ui').style.display = 'block';
-
-        const data = localDB[id] || { loc: "", items: [] };
-        document.getElementById('disp-id').innerText = id;
-        document.getElementById('inp-loc').value = data.loc;
-        renderItems(data.items);
+        
+        if(!localDB[id]) localDB[id] = { loc: "", items: [], category: "新規" };
+        
+        renderBoxHeader();
+        renderItems();
     }
 
-    function renderItems(items) {
+    function renderBoxHeader() {
+        if(!currentBoxId) return;
+        const data = localDB[currentBoxId];
+        document.getElementById('disp-id').innerText = currentBoxId;
+        document.getElementById('disp-category').innerText = data.category || "未分類";
+        document.getElementById('inp-loc').value = data.loc;
+    }
+
+    function renderItems() {
         const list = document.getElementById('item-list');
-        document.getElementById('disp-count').innerText = items.length;
         list.innerHTML = "";
+        const items = localDB[currentBoxId].items;
         
         items.forEach((item, idx) => {
             const div = document.createElement('div');
             div.className = 'item-row';
             div.innerHTML = `
-                <div><span class="item-num">#${idx+1}</span> ${item}</div>
+                <div><span class="num-circle">${getDuplicateNumber(item, items, idx)}</span> ${item}</div>
                 <button class="danger" onclick="deleteItem(${idx})">削除</button>
             `;
             list.appendChild(div);
         });
     }
 
-    function addItem(nameOverride = null) {
-        const inp = document.getElementById('inp-item');
-        const val = nameOverride || inp.value.trim();
-        if(!val) return;
+    // 重複時の番号生成ロジック (コントローラー①, コントローラー②...)
+    function getDuplicateNumber(currentItem, allItems, currentIndex) {
+        // 自分より前に同じ名前がいくつあるかカウント
+        let count = 0;
+        for(let i=0; i<=currentIndex; i++) {
+            if(allItems[i] === currentItem) count++;
+        }
+        return count; 
+    }
 
-        const data = localDB[currentBoxId] || { loc: "", items: [] };
-        // 場所入力欄の値も取得
-        const loc = document.getElementById('inp-loc').value;
-        
-        data.items.push(val);
-        pushBoxData(currentBoxId, loc, data.items);
-        
-        inp.value = "";
-        renderItems(data.items);
+    function addItemManually() {
+        const inp = document.getElementById('inp-item');
+        const val = inp.value.trim();
+        if(val) {
+            addItem(val);
+            inp.value = "";
+            document.getElementById('recommend-area').style.display = 'none';
+        }
+    }
+
+    function addItem(name) {
+        const data = localDB[currentBoxId];
+        data.items.push(name);
+        saveBox();
+        renderItems();
     }
 
     function deleteItem(idx) {
-        if(!confirm("削除しますか？")) return;
-        const data = localDB[currentBoxId];
-        const loc = document.getElementById('inp-loc').value;
-        data.items.splice(idx, 1);
-        pushBoxData(currentBoxId, loc, data.items);
-        renderItems(data.items);
+        if(confirm("削除しますか？")) {
+            localDB[currentBoxId].items.splice(idx, 1);
+            saveBox();
+            renderItems();
+        }
     }
 
-    function saveBoxData() {
-        if(!currentBoxId) return;
+    function saveBox() {
+        const data = localDB[currentBoxId];
         const loc = document.getElementById('inp-loc').value;
-        const data = localDB[currentBoxId] || { loc: "", items: [] };
-        pushBoxData(currentBoxId, loc, data.items);
+        data.loc = loc;
+        pushData(currentBoxId, loc, data.items, data.category);
     }
 
     function closeBox() {
-        stopAICamera();
         currentBoxId = null;
         document.getElementById('box-ui').style.display = 'none';
         document.getElementById('scan-ui').style.display = 'block';
-        startScanner();
+        startQR();
     }
 
-    // --- AI認識と自動翻訳 ---
-    async function startAICamera() {
-        document.getElementById('btn-ai-start').style.display = 'none';
-        document.getElementById('ai-msg').style.display = 'block';
-        document.getElementById('ai-msg').innerText = "モデル読込中...";
+    // --- スマート提案 (Smart Recommendation) ---
+    function checkRecommendation() {
+        const keyword = document.getElementById('inp-item').value.toLowerCase();
+        const area = document.getElementById('recommend-area');
+        const msg = document.getElementById('rec-msg');
         
-        if(!aiModel) aiModel = await mobilenet.load();
-        
-        document.getElementById('ai-msg').innerText = "カメラ起動中...";
-        const video = document.getElementById('ai-video');
-        video.style.display = 'block';
+        if(keyword.length < 2) { area.style.display = 'none'; return; }
 
-        try {
-            aiStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-            video.srcObject = aiStream;
-            document.getElementById('btn-ai-snap').style.display = 'flex';
-            document.getElementById('ai-msg').style.display = 'none';
-        } catch(e) {
-            alert("カメラエラー");
-        }
-    }
-
-    async function identifyItem() {
-        const video = document.getElementById('ai-video');
-        const predictions = await aiModel.classify(video);
-        
-        if(predictions && predictions.length > 0) {
-            const englishName = predictions[0].className;
-            // ここで翻訳を実行
-            const japaneseName = await translateText(englishName);
-            
-            // カンマ区切りの場合、先頭だけ取る（例: "mouse, computer mouse" -> "マウス"）
-            const simpleName = japaneseName.split('、')[0].split(',')[0];
-            
-            document.getElementById('inp-item').value = simpleName;
-            alert(`「${simpleName}」(${englishName}) を認識しました`);
-        }
-        stopAICamera();
-    }
-
-    function stopAICamera() {
-        if(aiStream) aiStream.getTracks().forEach(t => t.stop());
-        document.getElementById('ai-video').style.display = 'none';
-        document.getElementById('btn-ai-snap').style.display = 'none';
-        document.getElementById('btn-ai-start').style.display = 'flex';
-    }
-
-    // --- 検索 ---
-    function renderSearchResults() {
-        const key = document.getElementById('search-key').value.toLowerCase();
-        const div = document.getElementById('search-res');
-        div.innerHTML = "";
-        
-        if(!key) return;
+        // 簡易ロジック: カテゴリ名や中身に似たものがある箱を探す
+        let bestBox = null;
+        let maxScore = 0;
 
         Object.keys(localDB).forEach(id => {
-            const data = localDB[id];
-            let hit = false;
-            let innerHTML = `<div class="box-header"><span class="box-id" style="font-size:1rem">${id}</span> <span>${data.loc}</span></div>`;
+            if(id === currentBoxId) return; // 今の箱は除く
+            const box = localDB[id];
+            let score = 0;
             
-            // アイテム検索
-            data.items.forEach((item, idx) => {
-                if(item.toLowerCase().includes(key)) {
-                    hit = true;
-                    innerHTML += `<div class="item-row"><span class="item-num">#${idx+1}</span> <b>${item}</b></div>`;
-                }
-            });
+            // カテゴリ一致
+            if(box.category && keyword.includes(box.category)) score += 5;
+            // パソコンなどのキーワード一致
+            if(box.category === "PC・ガジェット" && (keyword.includes("マウス") || keyword.includes("pc"))) score += 10;
+            // 中身の部分一致
+            if(box.items.some(i => i.includes(keyword))) score += 3;
 
-            // 場所やID検索
-            if(!hit && (id.toLowerCase().includes(key) || data.loc.toLowerCase().includes(key))) {
-                hit = true;
-                innerHTML += `<div style="font-size:0.8rem; color:#666;">箱または場所にヒット</div>`;
-            }
-
-            if(hit) {
-                const card = document.createElement('div');
-                card.className = 'card';
-                card.innerHTML = innerHTML;
-                div.appendChild(card);
+            if(score > maxScore) {
+                maxScore = score;
+                bestBox = id;
             }
         });
-        
-        if(div.innerHTML === "") div.innerHTML = "<p style='text-align:center;color:#999'>見つかりません</p>";
+
+        if(bestBox) {
+            area.style.display = 'block';
+            msg.innerHTML = `<span style="cursor:pointer; text-decoration:underline;" onclick="alert('この箱を閉じて ${bestBox} をスキャンしてください')">${bestBox} (${localDB[bestBox].category})</span> に似たものがあります`;
+        } else {
+            area.style.display = 'none';
+        }
     }
 
+    // --- ボックス一覧表示 ---
+    function renderBoxList() {
+        const filter = document.getElementById('filter-input').value.toLowerCase();
+        const container = document.getElementById('box-list-container');
+        container.innerHTML = "";
+
+        Object.keys(localDB).forEach(id => {
+            const box = localDB[id];
+            const text = `${id} ${box.loc} ${box.category} ${box.items.join(' ')}`.toLowerCase();
+            if(text.includes(filter)) {
+                const div = document.createElement('div');
+                div.className = 'box-row';
+                div.onclick = () => { switchTab('scan'); openBox(id); }; // クリックで詳細へ
+                div.innerHTML = `
+                    <div>
+                        <div style="font-weight:bold; color:var(--primary);">${id} <span style="font-size:0.8rem; color:#666;">@${box.loc}</span></div>
+                        <div style="font-size:0.8rem; margin-top:2px;">
+                            <span class="box-tag">${box.category||'未'}</span>
+                            ${box.items.length}点
+                        </div>
+                    </div>
+                    <div style="font-size:1.2rem; color:#ccc;">›</div>
+                `;
+                container.appendChild(div);
+            }
+        });
+    }
+
+    // --- 🚀 高速入箱モード (High-Speed Mode) ---
+    async function startFastMode() {
+        if(!aiModel) aiModel = await mobilenet.load();
+        
+        isFastMode = true;
+        document.getElementById('fast-mode-ui').style.display = 'flex';
+        
+        // カメラ起動
+        const video = document.getElementById('fast-video');
+        try {
+            fastStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+            video.srcObject = fastStream;
+            loopFastAI(); // AIループ開始
+            if(recognition) recognition.start(); // 音声認識開始
+        } catch(e) {
+            alert("カメラ起動エラー");
+            stopFastMode();
+        }
+    }
+
+    function stopFastMode() {
+        isFastMode = false;
+        if(fastStream) fastStream.getTracks().forEach(t=>t.stop());
+        if(recognition) recognition.stop();
+        document.getElementById('fast-mode-ui').style.display = 'none';
+        saveBox(); // 最後に保存
+        renderItems();
+    }
+
+    // AI監視ループ
+    async function loopFastAI() {
+        if(!isFastMode) return;
+        const video = document.getElementById('fast-video');
+        const log = document.getElementById('fast-log');
+
+        if(video.readyState === 4) {
+            const now = Date.now();
+            // 2秒に1回程度の判定頻度に制限 (誤検知防止)
+            if(now - lastAiTime > 2000) {
+                const preds = await aiModel.classify(video);
+                if(preds && preds.length > 0) {
+                    const top = preds[0];
+                    // 確率60%以上で、前回と同じ物体でなければ登録
+                    if(top.probability > 0.6) {
+                        // GAS経由で翻訳して登録
+                        const jaName = await translate(top.className);
+                        registerFastItem(jaName, top.className); // 元の英語も渡して学習可能に
+                        lastAiTime = now;
+                    }
+                }
+            }
+        }
+        requestAnimationFrame(loopFastAI);
+    }
+
+    // 音声認識 (Web Speech API)
+    function initSpeech() {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if(SpeechRecognition) {
+            recognition = new SpeechRecognition();
+            recognition.lang = 'ja-JP';
+            recognition.continuous = true;
+            recognition.onresult = (event) => {
+                const last = event.results.length - 1;
+                const text = event.results[last][0].transcript.trim();
+                if(text === "完了" || text === "終了") {
+                    stopFastMode();
+                } else {
+                    registerFastItem(text, null); // 手動(音声)入力なので英語ラベルはなし
+                }
+            };
+        }
+    }
+
+    // アイテム登録 & フィードバック
+    function registerFastItem(name, originalEng) {
+        // 重複防止（直前のものと同じなら無視）
+        if(name === lastSpokenItem) return;
+        lastSpokenItem = name;
+
+        // ログ表示
+        const log = document.getElementById('fast-log');
+        log.innerText = `登録: ${name}`;
+        log.style.color = "#0f0";
+
+        // 音声読み上げ
+        const u = new SpeechSynthesisUtterance(name + "を登録");
+        speechSynthesis.speak(u);
+
+        // データ追加
+        localDB[currentBoxId].items.push(name);
+        
+        // もしAI由来で、ユーザーが後で名前を修正したら学習させるためのフック（簡易実装として、ここではAI判定直後に「修正UI」を出すのは高速モードの邪魔になるため、後で一覧から修正した際に学習させるロジックが良いが、今回は自動登録まで）
+        // ※ ユーザーが修正するUIはここにはないが、通常のリスト画面で修正可能
+    }
+
+    // 翻訳ヘルパー
+    async function translate(text) {
+        try {
+            const res = await fetch(`${GAS_URL}?action=translate&text=${encodeURIComponent(text)}`);
+            const json = await res.json();
+            return json.translated.split(',')[0]; // 最初の候補だけ
+        } catch(e) { return text; }
+    }
+
+    // --- その他 ---
     function createQR() {
-        const id = 'BOX-' + Math.floor(1000 + Math.random()*9000);
+        const id = 'BOX-' + Math.floor(10000 + Math.random()*90000);
         document.getElementById('new-id').value = id;
         document.getElementById('qrcode-display').innerHTML = "";
         new QRCode(document.getElementById("qrcode-display"), { text: id, width: 128, height: 128 });
     }
 </script>
-
 </body>
 </html>
