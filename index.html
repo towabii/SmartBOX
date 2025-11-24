@@ -2,171 +2,283 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Smart Box V13</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Smart Box V14</title>
     
     <!-- Libraries -->
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@latest"></script>
+    <!-- Icon Font -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0" />
 
     <style>
-        :root { 
-            --primary: #6366f1; 
-            --primary-bg: #e0e7ff;
-            --danger: #ef4444; 
-            --warning: #f59e0b;
-            --success: #10b981;
-            --bg: #f8fafc; 
-            --text: #334155;
-            --card: #ffffff;
-            --border: #e2e8f0;
+        :root {
+            /* ライトモード (デフォルト) */
+            --ios-bg: #F2F2F7;
+            --ios-card: #FFFFFF;
+            --ios-text: #000000;
+            --ios-subtext: #8E8E93;
+            --ios-input-bg: #E3E3E8;
+            --ios-border: #C6C6C8;
+            --ios-blue: #007AFF;
+            --ios-red: #FF3B30;
+            --ios-orange: #FF9500;
+            --ios-green: #34C759;
+            
+            --btn-primary-bg: #1c1c1e;
+            --btn-primary-text: #ffffff;
+            --btn-sec-bg: #E5E5EA;
+            --btn-sec-text: #1c1c1e;
+            
+            --safe-area-bottom: env(safe-area-inset-bottom);
         }
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-            margin: 0; padding: 0; 
-            background: var(--bg); color: var(--text); 
-            padding-bottom: 120px; /* 下部ナビ用に余白確保 */
-            -webkit-tap-highlight-color: transparent; 
-            line-height: 1.5;
-        }
-        
-        /* ログイン */
-        #login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--primary); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; transition: opacity 0.3s; }
-        #login-overlay input { width: 220px; text-align: center; font-size: 1.5rem; letter-spacing: 4px; margin: 20px 0; border: none; border-radius: 12px; padding: 12px; }
 
-        /* ヘッダー */
-        .header { background: var(--primary); color: white; padding: 15px 20px; position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.2); }
-        h1 { margin: 0; font-size: 1.2rem; font-weight: 800; letter-spacing: 0.5px; }
-        .sync-badge { font-size: 0.75rem; background: rgba(255,255,255,0.25); padding: 4px 12px; border-radius: 20px; font-weight: bold; backdrop-filter: blur(4px); }
+        /* ダークモード定義 */
+        body.dark-mode {
+            --ios-bg: #000000;
+            --ios-card: #1c1c1e;
+            --ios-text: #ffffff;
+            --ios-subtext: #98989d;
+            --ios-input-bg: #2c2c2e;
+            --ios-border: #38383a;
+            
+            --btn-primary-bg: #ffffff;
+            --btn-primary-text: #000000;
+            --btn-sec-bg: #2c2c2e;
+            --btn-sec-text: #ffffff;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--ios-bg);
+            color: var(--ios-text);
+            margin: 0;
+            padding: 0;
+            padding-bottom: calc(80px + var(--safe-area-bottom));
+            -webkit-tap-highlight-color: transparent;
+            font-size: 16px;
+            line-height: 1.5;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* アイコン設定 */
+        .material-symbols-rounded {
+            font-size: 24px;
+            vertical-align: middle;
+            user-select: none;
+        }
+        .icon-lg { font-size: 48px; }
 
         /* レイアウト */
-        .container { max-width: 600px; margin: 0 auto; padding: 20px 15px; }
-        .card { background: var(--card); border-radius: 20px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid var(--border); }
-        .card-head { font-size: 1rem; font-weight: bold; margin-bottom: 15px; color: #64748b; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 16px;
+        }
+
+        /* ヘッダー */
+        .header {
+            position: sticky;
+            top: 0;
+            z-index: 90;
+            background: var(--ios-bg); /* 透過をやめてなじませる */
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 0.5px solid var(--ios-border);
+        }
+        .header h1 { margin: 0; font-size: 20px; font-weight: 700; display:flex; align-items:center; gap:8px; }
+        .sync-badge {
+            font-size: 12px; color: var(--ios-subtext);
+            background: var(--btn-sec-bg); padding: 4px 8px; border-radius: 12px; font-weight: 600;
+        }
+
+        /* カード */
+        .ios-group { margin-bottom: 24px; }
+        .ios-group-title {
+            text-transform: uppercase; font-size: 13px; color: var(--ios-subtext);
+            margin: 0 0 8px 16px; font-weight: normal;
+        }
+        .ios-card {
+            background: var(--ios-card); border-radius: 12px; overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .ios-card-content { padding: 16px; }
 
         /* フォーム */
-        input, select { width: 100%; padding: 14px; margin-bottom: 12px; border: 1px solid var(--border); border-radius: 12px; background: #f8fafc; box-sizing: border-box; font-size: 1rem; transition: 0.2s; }
-        input:focus { border-color: var(--primary); outline: none; background: white; box-shadow: 0 0 0 3px var(--primary-bg); }
+        input[type="text"], input[type="password"], select {
+            width: 100%; box-sizing: border-box; background: var(--ios-input-bg);
+            border: none; padding: 12px 16px; border-radius: 10px;
+            font-size: 17px; color: var(--ios-text); margin-bottom: 0; appearance: none;
+        }
+        input:focus { outline: 2px solid var(--ios-blue); }
 
-        /* ボタン共通 */
-        button { width: 100%; padding: 14px; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 0.95rem; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.1s; margin-bottom: 8px; min-height: 48px; /* タップしやすく */ }
-        button:active { transform: scale(0.96); opacity: 0.9; }
-        
-        .btn-main { background: var(--primary); color: white; box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.3); }
-        .btn-sub { background: #f1f5f9; color: #475569; border: 1px solid var(--border); }
-        .btn-danger { background: #fee2e2; color: var(--danger); }
-        .btn-success { background: #d1fae5; color: #065f46; }
-        
-        /* 小さいボタン (リスト内など) */
-        .btn-sm { 
-            padding: 6px 14px; font-size: 0.8rem; width: auto; height: 36px; margin: 0; min-height: 36px; 
-            white-space: nowrap; /* 文字折り返し防止 */
+        /* ボタン */
+        button {
+            border: none; cursor: pointer; font-family: inherit; font-size: 17px; font-weight: 600;
+            border-radius: 12px; padding: 14px; width: 100%;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            transition: opacity 0.2s, transform 0.1s;
         }
+        button:active { opacity: 0.7; transform: scale(0.98); }
 
-        /* ボックス一覧 */
-        .box-row { padding: 18px 10px; border-bottom: 1px solid #f1f5f9; cursor: pointer; position: relative; transition: background 0.2s; }
-        .box-row:active { background: #f8fafc; }
-        .box-row:last-child { border-bottom: none; }
-        
-        .box-info-top { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 5px; }
-        .box-id { font-weight: 900; color: var(--primary); font-size: 1.1rem; }
-        .box-cat { font-size: 0.75rem; background: var(--primary-bg); color: var(--primary); padding: 4px 10px; border-radius: 8px; font-weight: bold; }
-        
-        .alert-badge { background: #fef2f2; color: var(--danger); padding: 3px 8px; border-radius: 6px; font-size: 0.7rem; display: none; font-weight: bold; border: 1px solid #fecaca; margin-left: 5px; }
-        .alert-badge.show { display: inline-block; }
+        .btn-primary { background: var(--btn-primary-bg); color: var(--btn-primary-text); }
+        .btn-secondary { background: var(--btn-sec-bg); color: var(--btn-sec-text); }
+        .btn-danger { background: rgba(255, 59, 48, 0.15); color: var(--ios-red); }
+        .btn-success { background: var(--btn-primary-bg); color: var(--btn-primary-text); }
+        .btn-warning { background: var(--ios-orange); color: white; }
 
-        /* アイテムリスト (スマホ見やすさ改善) */
-        .item-row { 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            padding: 16px 0; 
-            border-bottom: 1px solid #f1f5f9; 
-            gap: 10px;
+        /* リスト */
+        .list-row {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 12px 16px; background: var(--ios-card); 
+            border-bottom: 0.5px solid var(--ios-border);
         }
-        .item-content { 
-            flex: 1; 
-            min-width: 0; /* フレックスボックスでの文字溢れ防止 */
+        .list-row:last-child { border-bottom: none; }
+        .list-row-content { flex: 1; min-width: 0; margin-right: 12px; }
+        .item-title { font-size: 17px; font-weight: 500; color: var(--ios-text); display:flex; align-items:center; gap:6px; word-break: break-all; }
+        .item-subtitle { font-size: 13px; color: var(--ios-subtext); margin-top: 4px; }
+
+        .tag-badge {
+            display: inline-block; background: var(--btn-sec-bg); color: var(--ios-text);
+            font-size: 11px; padding: 2px 6px; border-radius: 4px; margin-left: 4px;
         }
-        .item-name { 
-            font-weight: bold; color: #334155; font-size: 1rem; 
-            word-break: break-word; /* 長い単語も折り返す */
-            line-height: 1.4;
-        }
-        .tag { 
-            color: #0284c7; background: #e0f2fe; padding: 2px 8px; border-radius: 6px; 
-            font-size: 0.75rem; display: inline-block; margin-top: 4px; white-space: nowrap;
-        }
-        .item-actions { 
-            display: flex; gap: 8px; flex-shrink: 0; /* ボタンが潰れないように */
+        .clickable-tag {
+            background: var(--ios-blue); color: white; padding: 4px 10px; border-radius: 16px;
+            font-size: 12px; margin: 0 4px 4px 0; display: inline-block; cursor: pointer;
         }
 
-        /* ★検索ハイライト★ */
-        .hl { background: #fef08a; color: #854d0e; padding: 0 2px; border-radius: 2px; font-weight: bold; }
+        .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+        .btn-sm { padding: 8px 12px; font-size: 14px; width: auto; border-radius: 8px; }
 
-        /* ★アイテム強調表示（ジャンプ時）★ */
-        .highlight-target { background-color: #fff7ed; border: 2px solid #f97316; border-radius: 8px; padding: 10px; animation: flash 1.5s ease-in-out; }
-        @keyframes flash {
-            0% { background-color: #ffedd5; transform: scale(1); }
-            50% { background-color: #fed7aa; transform: scale(1.02); }
-            100% { background-color: #fff7ed; transform: scale(1); }
+        /* ナビバー */
+        .nav-bar {
+            position: fixed; bottom: 0; left: 0; width: 100%;
+            background: var(--ios-card); 
+            border-top: 0.5px solid var(--ios-border);
+            display: flex; justify-content: space-around;
+            padding-bottom: var(--safe-area-bottom); z-index: 1000;
+        }
+        .nav-item { flex: 1; padding: 10px 0; text-align: center; font-size: 10px; color: var(--ios-subtext); cursor: pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+        .nav-item.active { color: var(--ios-text); font-weight: bold; }
+        .nav-item .material-symbols-rounded { font-size: 28px; margin-bottom: 2px; }
+
+        /* PCレイアウト */
+        @media (min-width: 768px) {
+            body { padding-bottom: 0; padding-left: 240px; background-color: var(--ios-bg); }
+            .container { max-width: 800px; padding: 40px; }
+            .nav-bar {
+                top: 0; left: 0; width: 240px; height: 100vh;
+                flex-direction: column; justify-content: flex-start;
+                border-top: none; border-right: 1px solid var(--ios-border);
+                padding-top: 40px; padding-bottom: 0; background: var(--ios-card);
+            }
+            .nav-item {
+                flex: 0; flex-direction: row; gap: 16px;
+                padding: 16px 32px; text-align: left; font-size: 16px; transition: 0.2s;
+                justify-content: flex-start;
+            }
+            .nav-item:hover { background: var(--btn-sec-bg); }
+            .nav-item .material-symbols-rounded { font-size: 24px; margin-bottom:0; }
+            .header { position: static; background: transparent; border-bottom: none; padding: 0 0 20px 0; }
+            .header h1 { font-size: 28px; }
+            #pc-camera-trigger { display: flex !important; }
+            #reader { display: none; }
+            #reader.active { display: block; }
         }
 
-        /* 提案アラート */
-        .suggestion-alert { display: none; margin-bottom: 15px; background: #fffbeb; border: 1px solid #fde68a; padding: 15px; border-radius: 12px; font-size: 0.95rem; color: #92400e; line-height: 1.6; }
-        .jump-link { text-decoration: underline; cursor: pointer; color: #d97706; font-weight: bold; padding: 5px 0; display: inline-block; }
-        
+        /* ログイン */
+        #login-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--ios-bg); z-index: 9999;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+        }
+        #login-overlay input { text-align: center; letter-spacing: 0.5em; font-size: 24px; max-width: 200px; margin: 24px 0; background: var(--ios-card); }
+
         /* モーダル */
-        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; display: none; justify-content: center; align-items: flex-end; backdrop-filter: blur(4px); }
-        .modal-content { background: white; width: 100%; max-width: 600px; border-radius: 24px 24px 0 0; padding: 30px 20px; box-sizing: border-box; max-height: 85vh; overflow-y: auto; animation: slideUp 0.3s; }
+        .modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.4); z-index: 2000;
+            display: none; justify-content: center; align-items: flex-end;
+            backdrop-filter: blur(2px);
+        }
+        .modal-content {
+            background: var(--ios-card); width: 100%; max-width: 600px;
+            border-radius: 20px 20px 0 0; padding: 24px;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.3); animation: slideUp 0.3s;
+            max-height: 85vh; overflow-y: auto;
+        }
+        @media (min-width: 768px) { .modal { align-items: center; } .modal-content { border-radius: 20px; } }
         @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
 
-        /* 高速モードUI */
-        #fast-mode-ui { position: fixed; top:0; left:0; width:100%; height:100%; background: #000; z-index: 1500; display:none; flex-direction:column; }
-        #fast-video { width: 100%; height: 100%; object-fit: cover; opacity: 0.6; }
-        .fast-overlay { position: absolute; bottom: 0; width: 100%; background: linear-gradient(to top, #000, transparent); padding: 40px 20px; text-align: center; color: white; box-sizing: border-box; }
-        #fast-log { font-size: 1.4rem; color: #4ade80; margin-bottom: 20px; min-height: 1.5em; font-weight: bold; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
-
-        /* ナビ */
-        .nav { position: fixed; bottom: 0; left: 0; width: 100%; background: white; border-top: 1px solid var(--border); display: flex; padding-bottom: env(safe-area-inset-bottom); z-index: 1000; box-shadow: 0 -5px 20px rgba(0,0,0,0.03); }
-        .nav-item { flex: 1; text-align: center; padding: 12px 0; color: #94a3b8; font-size: 0.7rem; cursor: pointer; transition: 0.1s; }
-        .nav-item.active { color: var(--primary); font-weight: bold; transform: translateY(-3px); }
-        .nav-icon { font-size: 1.6rem; display: block; margin-bottom: 4px; }
+        #reader { width: 100%; border-radius: 16px; overflow: hidden; background: #000; min-height: 300px; }
+        #reader video { object-fit: cover; }
         
-        /* 表示切替 */
-        .view { display: none; animation: fadeIn 0.2s; }
-        .view.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .alert-box { background: var(--ios-card); border: 1px solid var(--ios-border); color: var(--ios-text); padding: 12px; border-radius: 10px; font-size: 14px; margin-bottom: 12px; display: none; }
+        .alert-box.show { display: block; }
+        .jump-link { font-weight: bold; text-decoration: underline; cursor: pointer; }
 
-        /* 印刷 */
+        .hl { background: var(--ios-orange); color: white; border-radius: 2px; padding: 0 2px; }
+        .highlight-target { background-color: var(--btn-sec-bg) !important; border-left: 4px solid var(--ios-text); }
+        
+        .view { display: none; }
+        .view.active { display: block; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+
+        #pc-camera-trigger {
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+            height: 300px; background: var(--btn-sec-bg); border-radius: 16px; color: var(--ios-text); cursor: pointer;
+        }
+        #pc-camera-trigger:hover { opacity: 0.8; }
+
+        /* 統計バー */
+        .stat-bar { height: 8px; border-radius: 4px; display: flex; overflow: hidden; margin-top: 10px; }
+        .stat-seg { height: 100%; }
+        .stat-legend { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; font-size: 12px; color: var(--ios-subtext); }
+        .stat-item { display: flex; align-items: center; gap: 4px; }
+        .stat-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+        /* 印刷設定 */
         #print-area { display: none; }
         @media print {
+            @page { size: A4; margin: 0; }
             body * { visibility: hidden; }
             #print-area, #print-area * { visibility: visible; }
-            #print-area { position: absolute; top: 0; left: 0; width: 100%; height: 100vh; padding: 10mm; box-sizing: border-box; }
-            #print-area.mode-bulk { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(4, 1fr); gap: 10px; }
-            #print-area.mode-single { display: flex; justify-content: center; align-items: center; }
-            .print-card { border: 2px solid #000; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; border-radius: 8px; page-break-inside: avoid; }
-            .print-id { font-size: 2rem; font-weight: bold; margin-bottom: 10px; }
-            .mode-single .print-id { font-size: 4rem; }
+            #print-area { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: white; color: black; }
+            
+            #print-area.mode-bulk {
+                display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(4, 1fr);
+                width: 210mm; height: 297mm; box-sizing: border-box; padding: 10mm; gap: 5mm; page-break-after: always;
+            }
+            .print-card {
+                border: 1px dashed #000; display: flex; flex-direction: column; align-items: center; justify-content: center;
+                border-radius: 4px; box-sizing: border-box; padding: 10px;
+            }
+            #print-area.mode-single { display: flex; align-items: center; justify-content: center; width: 210mm; height: 297mm; }
+            .mode-single .print-card { border: 2px solid #000; width: 80mm; height: 80mm; border-radius: 10px; }
         }
     </style>
 </head>
 <body>
 
-<!-- ログイン -->
+<!-- ログイン画面 -->
 <div id="login-overlay">
-    <h2>🔒 Smart Box</h2>
-    <p style="opacity:0.8; margin-bottom:20px;">V13 Ultimate</p>
-    <input type="password" id="login-pass" placeholder="****" maxlength="8">
-    <button class="btn-main" style="width:240px; background:white; color:var(--primary);" onclick="login()">ロック解除</button>
-    <p id="login-msg" style="color:#fecaca; margin-top:15px; font-size:0.9rem;"></p>
+    <span class="material-symbols-rounded icon-lg" style="margin-bottom:10px;">inventory_2</span>
+    <h2 style="margin: 0; font-weight: 700;">Smart Box</h2>
+    <p style="color: var(--ios-subtext); margin-top: 5px;">V14 Ultimate</p>
+    <input type="password" id="login-pass" placeholder="••••" maxlength="8">
+    <button class="btn-primary" onclick="login()" style="max-width: 200px;">
+        <span class="material-symbols-rounded">lock_open</span> ロック解除
+    </button>
+    <p id="login-msg" style="color: var(--ios-red); margin-top: 20px; font-size: 14px; min-height: 20px;"></p>
 </div>
 
+<!-- ヘッダー -->
 <div class="header">
-    <h1>📦 Smart Box V13</h1>
+    <h1><span class="material-symbols-rounded">inventory_2</span> Smart Box</h1>
     <span id="sync-status" class="sync-badge">Wait</span>
 </div>
 
@@ -174,147 +286,266 @@
 
     <!-- 1. スキャン & 編集 -->
     <div id="view-scan" class="view active">
-        <div id="scan-ui" class="card">
-            <div class="card-head">QRコードをスキャン</div>
-            <div id="reader" style="border-radius:16px; overflow:hidden; background:black; min-height:250px;"></div>
-            <p style="text-align:center; font-size:0.85rem; color:#64748b; margin-top:15px;">※カメラを許可してください</p>
+        <div id="scan-ui" class="ios-group">
+            <div class="ios-group-title">QRコードをスキャン</div>
+            <div class="ios-card">
+                <div id="pc-camera-trigger" onclick="forceStartQR()">
+                    <span class="material-symbols-rounded icon-lg">photo_camera</span>
+                    <span style="font-weight:bold; margin-top:10px;">カメラを起動</span>
+                </div>
+                <div id="reader"></div>
+                <div style="padding: 16px; text-align: center; color: var(--ios-subtext); font-size: 13px;">
+                    ※カメラへのアクセスを許可してください
+                </div>
+            </div>
         </div>
 
-        <!-- 箱詳細 -->
-        <div id="box-ui" class="card" style="display:none;">
-            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px;">
-                <div>
-                    <div id="disp-id" class="box-id" style="font-size:1.6rem;">BOX-000</div>
-                    <div style="margin-top:8px; display:flex; align-items:center; flex-wrap:wrap; gap:5px;">
-                        <span id="disp-cat" class="box-cat" style="margin:0;">カテゴリ</span>
-                        <span id="disp-alert" class="alert-badge">⚠️ 長期放置</span>
+        <div id="box-ui" style="display:none;">
+            <div class="ios-group">
+                <div class="ios-group-title">ボックス情報</div>
+                <div class="ios-card">
+                    <div style="padding: 20px; border-bottom: 0.5px solid var(--ios-border); display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div id="disp-id" style="font-size: 24px; font-weight: 800;">BOX-000</div>
+                            <div style="display: flex; gap: 8px; margin-top: 4px;">
+                                <span id="disp-cat" class="tag-badge">カテゴリ</span>
+                                <span id="disp-alert" style="display:none; font-size: 12px; font-weight: 700; color: var(--ios-red); background: rgba(255, 59, 48, 0.1); padding: 4px 8px; border-radius: 6px; align-items:center; gap:4px;">
+                                    <span class="material-symbols-rounded" style="font-size:14px;">warning</span>長期放置
+                                </span>
+                            </div>
+                        </div>
+                        <button class="btn-secondary" style="width: 50px; height: 50px; border-radius: 25px; padding: 0;" onclick="printQR()">
+                            <span class="material-symbols-rounded">print</span>
+                        </button>
                     </div>
-                </div>
-                <button class="btn-sub" style="width:auto; padding:10px;" onclick="printQR()">🖨️</button>
-            </div>
-            
-            <label style="font-size:0.85rem; font-weight:bold; color:#64748b;">保管場所</label>
-            <input type="text" id="inp-loc" placeholder="例: クローゼット上段" onchange="saveBox()">
-            
-            <!-- 既存在庫の重複アラート -->
-            <div id="existing-dup-alert" class="suggestion-alert"></div>
-
-            <!-- リスト -->
-            <div class="card-head" style="margin-top:20px;">中身リスト</div>
-            <div id="item-list-container" style="max-height:300px; overflow-y:auto; border:1px solid var(--border); border-radius:12px; padding:10px; margin-bottom:20px; background:#fff;"></div>
-
-            <!-- 追加エリア -->
-            <div style="background:#f1f5f9; padding:20px; border-radius:16px;">
-                <div class="card-head" style="border:none; padding:0; margin-bottom:10px;">アイテム追加</div>
-                
-                <div style="display:flex; gap:10px;">
-                    <input type="text" id="inp-name" placeholder="品名 (例: 電池 #備蓄)" style="margin:0; flex:1;">
-                    <button class="btn-main" style="width:auto; margin:0;" onclick="addItem()">追加</button>
-                </div>
-
-                <div id="input-dup-alert" class="suggestion-alert" style="margin-top:10px;"></div>
-
-                <div style="margin-top:15px; font-size:0.8rem; color:#64748b; text-align:center;">スマート入力</div>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:8px;">
-                    <button class="btn-success" onclick="startFastMode(false)">🚀 カメラ+音声</button>
-                    <button class="btn-success" onclick="startFastMode(true)">🎤 音声(連続)</button>
-                </div>
-                
-                <!-- AIカメラ -->
-                <div id="cam-ui" style="display:none; background:white; padding:15px; border-radius:16px; margin-top:15px; box-shadow:0 4px 10px rgba(0,0,0,0.1);">
-                    <video id="cam-video" autoplay playsinline muted style="width:100%; border-radius:12px;"></video>
-                    <div id="ai-hint" style="text-align:center; font-weight:bold; color:var(--primary); margin:10px 0;">解析中...</div>
-                    <div style="display:flex; gap:10px;">
-                        <button class="btn-main" onclick="snapAI()">決定</button>
-                        <button class="btn-sub" onclick="stopCam()">閉じる</button>
+                    <div style="padding: 16px;">
+                        <label style="font-size: 12px; font-weight: 600; color: var(--ios-subtext); display: block; margin-bottom: 8px;">保管場所</label>
+                        <input type="text" id="inp-loc" placeholder="例: クローゼット上段" onchange="saveBox()">
                     </div>
                 </div>
             </div>
 
-            <div style="display:flex; gap:10px; margin-top:25px;">
-                <button class="btn-sub" onclick="closeBox()">閉じる</button>
-                <button class="btn-danger" onclick="deleteBox()">箱を削除</button>
+            <div id="existing-dup-alert" class="alert-box"></div>
+
+            <div class="ios-group">
+                <div class="ios-group-title">中身リスト</div>
+                <div class="ios-card" style="min-height: 100px;">
+                    <div id="item-list-container"></div>
+                </div>
+            </div>
+
+            <div class="ios-group">
+                <div class="ios-group-title">アイテム追加</div>
+                <div class="ios-card ios-card-content">
+                    <div style="display: flex; gap: 10px; margin-bottom: 12px;">
+                        <input type="text" id="inp-name" placeholder="品名 (例: 電池 #備蓄)" style="flex: 1;">
+                        <button class="btn-primary" style="width: auto; padding: 0 20px;" onclick="addItem()">追加</button>
+                    </div>
+                    <div id="input-dup-alert" class="alert-box"></div>
+                    <div style="text-align: center; font-size: 12px; color: var(--ios-subtext); margin: 16px 0 8px;">スマート入力</div>
+                    <div class="btn-group">
+                        <button class="btn-success" onclick="startFastMode(false)">
+                            <span class="material-symbols-rounded">rocket_launch</span> カメラ+音声
+                        </button>
+                        <button class="btn-success" onclick="startFastMode(true)">
+                            <span class="material-symbols-rounded">mic</span> 音声のみ
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="cam-ui" class="ios-card" style="display:none; margin-top: 16px; padding: 16px;">
+                    <video id="cam-video" autoplay playsinline muted style="width:100%; border-radius: 12px; margin-bottom: 10px;"></video>
+                    <div id="ai-hint" style="text-align: center; font-weight: bold; margin-bottom: 12px;">解析中...</div>
+                    <div class="btn-group">
+                        <button class="btn-primary" onclick="snapAI()">決定</button>
+                        <button class="btn-secondary" onclick="stopCam()">閉じる</button>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 40px;">
+                <button class="btn-secondary" onclick="closeBox()" style="margin-bottom: 16px;">
+                    <span class="material-symbols-rounded">close</span> 閉じる
+                </button>
+                <button class="btn-danger" onclick="deleteBox()">
+                    <span class="material-symbols-rounded">delete</span> このボックスを削除
+                </button>
             </div>
         </div>
     </div>
 
     <!-- 2. 一覧 & 検索 -->
     <div id="view-list" class="view">
-        <div class="card" style="background:#f0fdf4; border-color:#86efac;">
-            <div class="card-head" style="color:#166534; border-color:#bbf7d0;">🧹 これどこ？検索</div>
-            <div style="display:flex; gap:10px;">
-                <input type="text" id="suggest-input" placeholder="品名 (例: ハサミ)" style="margin:0; background:white;">
-                <button class="btn-success" style="width:auto; margin:0;" onclick="findSuggestion()">検索</button>
+        <!-- 統計ダッシュボード (新機能) -->
+        <div class="ios-group">
+            <div class="ios-group-title">収納データ</div>
+            <div class="ios-card ios-card-content">
+                <div style="display:flex; justify-content:space-between;">
+                    <div style="font-weight:bold; font-size:14px;">カテゴリ別割合</div>
+                    <div style="font-size:12px; color:var(--ios-subtext);" id="total-count">0箱 / 0点</div>
+                </div>
+                <div class="stat-bar" id="stat-bar"></div>
+                <div class="stat-legend" id="stat-legend"></div>
             </div>
-            <div id="suggest-res" style="margin-top:15px; font-size:0.95rem; color:#14532d; line-height:1.6;"></div>
         </div>
 
-        <div class="card">
-            <div class="card-head">📦 ボックス一覧</div>
-            <input type="text" id="filter-input" placeholder="🔍 名前、場所、カテゴリ..." onkeyup="renderList()">
-            <div id="list-container"></div>
+        <!-- タグクラウド (新機能) -->
+        <div class="ios-group">
+            <div class="ios-group-title">よく使うタグ</div>
+            <div class="ios-card ios-card-content" id="tag-cloud-area" style="display:none;">
+                <!-- タグがここに挿入されます -->
+            </div>
+        </div>
+
+        <div class="ios-group">
+            <div class="ios-group-title">検索 & 提案</div>
+            <div class="ios-card ios-card-content">
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="suggest-input" placeholder="何を探していますか？" style="background: var(--ios-input-bg);">
+                    <button class="btn-success" style="width: auto;" onclick="findSuggestion()">
+                        <span class="material-symbols-rounded">search</span>
+                    </button>
+                </div>
+                <div id="suggest-res" style="margin-top: 12px; font-size: 14px; line-height: 1.6;"></div>
+            </div>
+        </div>
+
+        <div class="ios-group">
+            <div class="ios-group-title">すべてのボックス</div>
+            <div style="padding: 0 0 12px 0;">
+                <input type="text" id="filter-input" placeholder="名前、場所、カテゴリで絞り込み" onkeyup="renderList()" style="padding-left:16px;">
+            </div>
+            <div class="ios-card">
+                <div id="list-container"></div>
+            </div>
         </div>
     </div>
 
     <!-- 3. 設定 -->
     <div id="view-settings" class="view">
-        <div class="card" style="border:2px solid #f59e0b;">
-            <div class="card-head" style="color:#b45309;">⚠️ 管理ツール</div>
-            <p style="font-size:0.9rem; color:#b45309; margin-bottom:15px;">
-                全ボックスの中身を再分析し、カテゴリを自動設定し直します。<br>
-                ※実行には厳重な確認が必要です。
-            </p>
-            <button class="btn-main" style="background:#f59e0b;" onclick="reCategorizeAll()">全ボックス自動カテゴリ整理</button>
+        <div class="ios-group">
+            <div class="ios-group-title">外観設定</div>
+            <div class="ios-card">
+                <div class="list-row" onclick="toggleTheme()" style="cursor: pointer;">
+                    <div class="list-row-content">
+                        <div class="item-title"><span class="material-symbols-rounded">dark_mode</span> ダークモード</div>
+                        <div class="item-subtitle">画面の色調を切り替えます</div>
+                    </div>
+                    <div id="theme-label" style="color: var(--ios-subtext); font-size:14px;">オフ</div>
+                </div>
+            </div>
         </div>
 
-        <div class="card">
-            <div class="card-head">🖨️ QR一括印刷</div>
-            <button class="btn-main" onclick="bulkPrint()">A4印刷プレビュー (8面)</button>
+        <div class="ios-group">
+            <div class="ios-group-title">データ管理</div>
+            <div class="ios-card">
+                <!-- CSVエクスポート (新機能) -->
+                <div class="list-row" onclick="exportCSV()" style="cursor: pointer;">
+                    <div class="list-row-content">
+                        <div class="item-title"><span class="material-symbols-rounded">download</span> CSV書き出し</div>
+                        <div class="item-subtitle">全データをファイルとして保存</div>
+                    </div>
+                </div>
+                <div class="list-row" onclick="fetchData(true)" style="cursor: pointer;">
+                    <div class="list-row-content">
+                        <div class="item-title"><span class="material-symbols-rounded">cloud_sync</span> データ強制同期</div>
+                        <div class="item-subtitle">サーバーから最新データを取得</div>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="card">
-            <div class="card-head">☁️ データ管理</div>
-            <button class="btn-sub" onclick="fetchData(true)">強制同期</button>
-            <button class="btn-danger" onclick="logout()">ログアウト</button>
+
+        <div class="ios-group">
+            <div class="ios-group-title">管理者ツール</div>
+            <div class="ios-card">
+                <div class="list-row" onclick="reCategorizeAll()" style="cursor: pointer;">
+                    <div class="list-row-content">
+                        <div class="item-title"><span class="material-symbols-rounded" style="color:var(--ios-orange);">auto_fix_high</span> AI自動整理</div>
+                        <div class="item-subtitle">カテゴリを全自動で再設定</div>
+                    </div>
+                </div>
+            </div>
         </div>
+
+        <div class="ios-group">
+            <div class="ios-group-title">印刷</div>
+            <div class="ios-card">
+                <div class="list-row" onclick="bulkPrint()" style="cursor: pointer;">
+                    <div class="list-row-content">
+                        <div class="item-title"><span class="material-symbols-rounded">print</span> QRコード一括印刷</div>
+                        <div class="item-subtitle">A4用紙1枚に8個のQRを作成</div>
+                    </div>
+                    <div style="color: var(--ios-subtext);">
+                        <span class="material-symbols-rounded">chevron_right</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="ios-group">
+             <div class="ios-card">
+                <div class="list-row" style="cursor: pointer;">
+                    <button class="btn-danger" style="background: transparent; justify-content: flex-start; padding: 0;" onclick="logout()">
+                        ログアウト
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- ナビゲーション -->
+<div class="nav-bar">
+    <div class="nav-item active" onclick="tab('scan')">
+        <span class="material-symbols-rounded">photo_camera</span>
+        <span>編集</span>
+    </div>
+    <div class="nav-item" onclick="tab('list')">
+        <span class="material-symbols-rounded">search</span>
+        <span>検索</span>
+    </div>
+    <div class="nav-item" onclick="tab('settings')">
+        <span class="material-symbols-rounded">settings</span>
+        <span>設定</span>
     </div>
 </div>
 
-<!-- ナビ -->
-<div class="nav">
-    <div class="nav-item active" onclick="tab('scan')"><span class="nav-icon">📷</span>編集</div>
-    <div class="nav-item" onclick="tab('list')"><span class="nav-icon">🔎</span>検索</div>
-    <div class="nav-item" onclick="tab('settings')"><span class="nav-icon">⚙️</span>設定</div>
-</div>
-
-<!-- モーダル: 引っ越し -->
+<!-- 引っ越しモーダル -->
 <div id="move-modal" class="modal">
     <div class="modal-content">
-        <h3>🚚 アイテム移動</h3>
-        <p id="move-info" style="margin-bottom:15px; font-weight:bold; color:var(--primary);"></p>
-        <div id="move-list" style="max-height:300px; overflow-y:auto; border:1px solid var(--border); border-radius:12px; margin-bottom:15px;"></div>
-        <button class="btn-sub" onclick="document.getElementById('move-modal').style.display='none'">キャンセル</button>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+            <h3 style="margin:0; display:flex; align-items:center; gap:8px;">
+                <span class="material-symbols-rounded">local_shipping</span> アイテム移動
+            </h3>
+            <button class="btn-secondary btn-sm" onclick="document.getElementById('move-modal').style.display='none'">キャンセル</button>
+        </div>
+        <p id="move-info" style="font-weight:600; margin-bottom:16px;"></p>
+        <div class="ios-card" style="border: 1px solid var(--ios-border);">
+            <div id="move-list" style="max-height: 40vh; overflow-y: auto;"></div>
+        </div>
     </div>
 </div>
 
 <!-- 高速モードUI -->
-<div id="fast-mode-ui">
+<div id="fast-mode-ui" style="position: fixed; top:0; left:0; width:100%; height:100%; z-index: 1500; display:none; flex-direction:column; background:black;">
     <div style="flex:1; position:relative; overflow:hidden; display:flex; justify-content:center; align-items:center;">
-        <video id="fast-video" autoplay playsinline muted></video>
-        <div id="voice-icon" style="display:none; font-size:6rem; color:white;">🎤</div>
-        <div class="scan-line" id="scan-line"></div>
+        <video id="fast-video" autoplay playsinline muted style="width:100%; height:100%; object-fit:cover; opacity:0.7;"></video>
+        <div id="voice-icon" style="display:none; color:white;">
+            <span class="material-symbols-rounded icon-lg" style="font-size:64px;">mic</span>
+        </div>
+        <div class="scan-line" id="scan-line" style="position:absolute; width:100%; height:2px; background:#fff; top:50%; box-shadow:0 0 10px #fff;"></div>
     </div>
-    <div class="fast-overlay">
-        <div id="fast-log">待機中...</div>
-        <button class="btn-sub" onclick="stopFastMode()">終了</button>
+    <div class="fast-overlay" style="position: absolute; bottom: 0; width: 100%; padding: 20px; box-sizing: border-box; text-align: center; color: white; background: rgba(0,0,0,0.8);">
+        <div id="fast-log" style="font-size: 24px; font-weight: bold; margin-bottom: 24px;">待機中...</div>
+        <button class="btn-secondary" onclick="stopFastMode()" style="background: white; color: black; max-width: 200px; margin: 0 auto;">終了</button>
     </div>
 </div>
 
 <div id="print-area"></div>
 
 <script>
-    // ▼▼▼ 設定エリア ▼▼▼
     const GAS_URL = "https://script.google.com/macros/s/AKfycbyDZTbB-x1eftkFIET5f7NhWuZqM6gvV23G1zmuoCwpdKJ4FDY417qdtNufOe8l8o52QA/exec";
-    // ▲▲▲ ▲▲▲ ▲▲▲
 
     let localDB = {}; 
     let currentBoxId = null;
@@ -326,7 +557,7 @@
     let targetHighlightItem = null;
     let audioCtx = null;
 
-    // --- 音声 (Beep) 機能 ---
+    // --- Audio ---
     function initAudio() {
         const AC = window.AudioContext || window.webkitAudioContext;
         if (AC) audioCtx = new AC();
@@ -334,28 +565,20 @@
     function beep() {
         if(!audioCtx) initAudio();
         if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-        
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
         osc.connect(gain);
         gain.connect(audioCtx.destination);
-        
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(880, audioCtx.currentTime); // 880Hz
+        osc.frequency.setValueAtTime(880, audioCtx.currentTime);
         gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-        
         osc.start();
-        osc.stop(audioCtx.currentTime + 0.1); // 0.1秒鳴らす
+        osc.stop(audioCtx.currentTime + 0.1);
     }
-
-    // 全ボタンクリック時に音を鳴らす設定
     document.addEventListener('click', (e) => {
-        if(e.target.tagName === 'BUTTON' || e.target.closest('button')) {
-            beep();
-        }
+        if(e.target.tagName === 'BUTTON' || e.target.closest('button')) beep();
     });
 
-    // 拡張辞書
     const DICT = {
         "PC・ガジェット": ["PC","パソコン","マウス","キーボード","モニター","ケーブル","USB","充電器","スマホ","電池","イヤホン","HDD","SSD","SD","マイク","ルーター","タブレット","iPad","Apple"],
         "衣類・ファッション": ["服","シャツ","ズボン","パンツ","スカート","下着","靴下","コート","ジャケット","帽子","マフラー","ベルト","手袋","スーツ","ネクタイ","鞄","バッグ","靴","ブーツ","サンダル","パジャマ"],
@@ -371,6 +594,9 @@
 
     window.onload = () => {
         initAudio();
+        if(localStorage.getItem('sb_dark')==='1') document.body.classList.add('dark-mode');
+        updateThemeLabel();
+        
         if(password) {
             document.getElementById('login-overlay').style.display='none';
             fetchData();
@@ -378,6 +604,39 @@
         renderList();
         document.getElementById('inp-name').addEventListener('input', checkInputDuplicate);
     };
+
+    // --- 新機能: ダークモード切替 ---
+    function toggleTheme() {
+        document.body.classList.toggle('dark-mode');
+        localStorage.setItem('sb_dark', document.body.classList.contains('dark-mode')?'1':'0');
+        updateThemeLabel();
+    }
+    function updateThemeLabel() {
+        const isDark = document.body.classList.contains('dark-mode');
+        document.getElementById('theme-label').innerText = isDark ? 'オン' : 'オフ';
+    }
+
+    // --- 新機能: CSVエクスポート ---
+    function exportCSV() {
+        if(Object.keys(localDB).length === 0) { alert("データがありません"); return; }
+        let csv = "\uFEFFBOX_ID,保管場所,カテゴリ,アイテム名,タグ,更新日\n";
+        Object.keys(localDB).forEach(id => {
+            const b = localDB[id];
+            if(b.items.length === 0) {
+                csv += `"${id}","${b.loc}","${b.category}","(なし)","","${b.updated}"\n`;
+            } else {
+                b.items.forEach(i => {
+                    const tags = (i.t||[]).join(" ");
+                    csv += `"${id}","${b.loc}","${b.category}","${i.n}","${tags}","${b.updated}"\n`;
+                });
+            }
+        });
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `smartbox_backup_${new Date().toISOString().slice(0,10)}.csv`;
+        a.click();
+    }
 
     function login() {
         const p = document.getElementById('login-pass').value;
@@ -419,14 +678,31 @@
         } catch(e){ document.getElementById('sync-status').innerText = "Save Error"; }
     }
 
-    // --- UI制御 ---
     function tab(t) {
         document.querySelectorAll('.view').forEach(e=>e.classList.remove('active'));
         document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active'));
         document.getElementById('view-'+t).classList.add('active');
-        document.querySelectorAll('.nav-item')[['scan','list','settings'].indexOf(t)].classList.add('active');
-        if(t==='scan') setTimeout(startQR,300); else stopQR();
+        const idx = t === 'scan' ? 0 : t === 'list' ? 1 : 2;
+        document.querySelectorAll('.nav-item')[idx].classList.add('active');
+        const isDesktop = window.innerWidth >= 768;
+        if(t==='scan') {
+            if(isDesktop) {
+                stopQR();
+                document.getElementById('pc-camera-trigger').style.display = 'flex';
+                document.getElementById('reader').classList.remove('active');
+            } else {
+                setTimeout(startQR,300); 
+            }
+        } else {
+            stopQR();
+        }
         if(t==='list') renderList();
+    }
+
+    function forceStartQR() {
+        document.getElementById('pc-camera-trigger').style.display = 'none';
+        document.getElementById('reader').classList.add('active');
+        startQR();
     }
 
     function startQR() {
@@ -435,10 +711,8 @@
         if(r && r.offsetParent!==null) {
             const sc = new Html5Qrcode("reader");
             sc.start({facingMode:"environment"},{fps:10,qrbox:250},(t)=>{
-                beep(); // QR読み取り時も鳴らす
-                openBox(t);
-            })
-            .then(()=>{qrScanner=sc}).catch(()=>{setTimeout(startQR,500)});
+                beep(); openBox(t);
+            }).then(()=>{qrScanner=sc}).catch(()=>{ if(window.innerWidth<768) setTimeout(startQR,500); });
         }
     }
     function stopQR() { if(qrScanner) qrScanner.stop().then(()=>{qrScanner.clear();qrScanner=null}).catch(()=>{qrScanner=null}); }
@@ -453,11 +727,13 @@
     }
     
     function closeBox() { 
-        currentBoxId=null; 
-        targetHighlightItem=null; 
+        currentBoxId=null; targetHighlightItem=null; 
         document.getElementById('box-ui').style.display='none'; 
         document.getElementById('scan-ui').style.display='block'; 
-        setTimeout(startQR,300); 
+        if(window.innerWidth >= 768) {
+             document.getElementById('pc-camera-trigger').style.display = 'flex';
+             document.getElementById('reader').classList.remove('active');
+        } else { setTimeout(startQR,300); }
     }
 
     function jumpToBox(boxId, itemName) {
@@ -471,34 +747,28 @@
         document.getElementById('disp-id').innerText = currentBoxId;
         document.getElementById('disp-cat').innerText = d.category || "未分類";
         document.getElementById('inp-loc').value = d.loc;
-
         const diff = (new Date() - new Date(d.updated)) / (1000*60*60*24);
-        if(diff > 365) document.getElementById('disp-alert').classList.add('show');
-        else document.getElementById('disp-alert').classList.remove('show');
-
+        document.getElementById('disp-alert').style.display = (diff > 365) ? 'flex' : 'none';
         checkExistingDuplicates(d.items);
-
         const list = document.getElementById('item-list-container');
         list.innerHTML = "";
-        
+        if(d.items.length === 0) list.innerHTML = `<div style="text-align:center; padding:20px; color:var(--ios-subtext);">アイテムがありません</div>`;
         d.items.forEach((item, i) => {
             const row = document.createElement('div');
-            row.className = "item-row";
-            const tags = (item.t||[]).map(t=>`<span class="tag">${t}</span>`).join("");
-            
+            row.className = "list-row";
+            const tags = (item.t||[]).map(t=>`<span class="tag-badge">${t}</span>`).join("");
             if(targetHighlightItem && item.n === targetHighlightItem) {
                 row.classList.add('highlight-target');
                 setTimeout(() => row.scrollIntoView({behavior: "smooth", block: "center"}), 300);
                 targetHighlightItem = null;
             }
-
             row.innerHTML = `
-                <div class="item-content">
-                    <span class="item-name">${item.n}</span> ${tags}
+                <div class="list-row-content">
+                    <div class="item-title">${item.n} ${tags}</div>
                 </div>
-                <div class="item-actions">
-                    <button class="btn-sm btn-sub" onclick="openMoveModal(${i})">移動</button>
-                    <button class="btn-sm btn-danger" onclick="delItem(${i})">削除</button>
+                <div style="display: flex; gap: 6px;">
+                    <button class="btn-secondary btn-sm" onclick="openMoveModal(${i})"><span class="material-symbols-rounded">local_shipping</span></button>
+                    <button class="btn-danger btn-sm" onclick="delItem(${i})"><span class="material-symbols-rounded">delete</span></button>
                 </div>`;
             list.appendChild(row);
         });
@@ -506,58 +776,45 @@
 
     function checkExistingDuplicates(items) {
         const alertBox = document.getElementById('existing-dup-alert');
-        alertBox.style.display = 'none';
+        alertBox.classList.remove('show');
         alertBox.innerHTML = "";
         if(!items || items.length === 0) return;
-
         let foundDupes = [];
         for(let item of items) {
             for(let bid of Object.keys(localDB)) {
                 if(bid === currentBoxId) continue;
                 if(localDB[bid].items.some(i => i.n.includes(item.n) || item.n.includes(i.n))) {
-                    foundDupes.push(`💡 <span class="jump-link" onclick="jumpToBox('${bid}', '${item.n}')">${bid}</span> にも『${item.n}』があります`);
+                    foundDupes.push(`<div><span class="material-symbols-rounded" style="color:var(--ios-orange);font-size:16px;">lightbulb</span> <span class="jump-link" onclick="jumpToBox('${bid}', '${item.n}')">${bid}</span> にも『${item.n}』があります</div>`);
                     if(foundDupes.length >= 3) break;
                 }
             }
             if(foundDupes.length >= 3) break;
         }
-
-        if(foundDupes.length > 0) {
-            alertBox.innerHTML = foundDupes.join("<br>");
-            alertBox.style.display = 'block';
-        }
+        if(foundDupes.length > 0) { alertBox.innerHTML = foundDupes.join(""); alertBox.classList.add('show'); }
     }
 
     function checkInputDuplicate() {
         const val = document.getElementById('inp-name').value.trim();
         const alertDiv = document.getElementById('input-dup-alert');
-        if(val.length < 2) { alertDiv.style.display='none'; return; }
-        
-        suggestedBoxId = null;
-        let foundName = "";
-        
+        if(val.length < 2) { alertDiv.classList.remove('show'); return; }
+        suggestedBoxId = null; let foundName = "";
         Object.keys(localDB).forEach(bid => {
             if(bid === currentBoxId) return;
             const match = localDB[bid].items.find(i => i.n.includes(val) || val.includes(i.n));
             if(match) { suggestedBoxId = bid; foundName = match.n; }
         });
-
         if(suggestedBoxId) {
             const cat = localDB[suggestedBoxId].category;
-            alertDiv.innerHTML = `💡 <b>${suggestedBoxId}</b> (${cat}) に似た物「${foundName}」があります。<br><u style="cursor:pointer" onclick="jumpToBox('${suggestedBoxId}', '${foundName}')">そこへ移動して確認</u>`;
-            alertDiv.style.display='block';
-        } else {
-            alertDiv.style.display='none';
-        }
+            alertDiv.innerHTML = `<div><span class="material-symbols-rounded" style="color:var(--ios-orange);font-size:16px;">lightbulb</span> <b>${suggestedBoxId}</b> (${cat}) に似た物「${foundName}」があります。<br><span class="jump-link" onclick="jumpToBox('${suggestedBoxId}', '${foundName}')">そこへ移動して確認</span></div>`;
+            alertDiv.classList.add('show');
+        } else { alertDiv.classList.remove('show'); }
     }
 
     function autoCategorize(items) {
         let scores = {};
         items.forEach(itm => {
             const txt = itm.n + (itm.t||[]).join("");
-            Object.keys(DICT).forEach(cat => {
-                if(DICT[cat].some(w => txt.includes(w))) scores[cat] = (scores[cat]||0)+1;
-            });
+            Object.keys(DICT).forEach(cat => { if(DICT[cat].some(w => txt.includes(w))) scores[cat] = (scores[cat]||0)+1; });
         });
         let max = 0, best = "未分類";
         Object.keys(scores).forEach(c => { if(scores[c]>max){max=scores[c]; best=c;} });
@@ -567,10 +824,8 @@
 
     function reCategorizeAll() {
         if(!confirm("⚠️ 【警告】\n全ボックスのカテゴリを自動再設定します。\nよろしいですか？")) return;
-        if(!confirm("本当に実行しますか？\n取り消せません。")) return;
         const u = prompt("実行するには「整理」と入力");
         if(u !== "整理") { alert("キャンセルしました"); return; }
-        
         let count = 0;
         Object.keys(localDB).forEach(bid => {
             const box = localDB[bid];
@@ -589,18 +844,14 @@
         if(!val) return;
         const tags = val.match(/#[^\s]+/g) || [];
         const name = val.replace(/#[^\s]+/g, "").trim();
-        
         localDB[currentBoxId].items.push({ n:name, c:1, t:tags });
         document.getElementById('inp-name').value = "";
-        document.getElementById('input-dup-alert').style.display='none';
+        document.getElementById('input-dup-alert').classList.remove('show');
         localDB[currentBoxId].category = autoCategorize(localDB[currentBoxId].items);
         saveBox(); renderBoxUI();
     }
     function delItem(i) {
-        if(confirm("削除しますか？")) {
-            localDB[currentBoxId].items.splice(i, 1);
-            saveBox(); renderBoxUI();
-        }
+        if(confirm("削除しますか？")) { localDB[currentBoxId].items.splice(i, 1); saveBox(); renderBoxUI(); }
     }
     async function deleteBox() {
         if(!confirm("箱ごと削除しますか？")) return;
@@ -618,21 +869,18 @@
     function openMoveModal(i) {
         moveTargetIdx = i;
         const itm = localDB[currentBoxId].items[i];
-        document.getElementById('move-info').innerText = `「${itm.n}」を移動`;
+        document.getElementById('move-info').innerHTML = `「${itm.n}」を移動`;
         const list = document.getElementById('move-list'); list.innerHTML="";
         Object.keys(localDB).forEach(bid => {
             if(bid === currentBoxId) return;
             const b = localDB[bid];
             const div = document.createElement('div');
-            div.style.padding="12px"; div.style.borderBottom="1px solid #f1f5f9"; div.style.cursor="pointer";
-            div.innerHTML = `<b>${bid}</b> <span class="box-cat">${b.category}</span> <span style="font-size:0.8rem;color:#666">@${b.loc}</span>`;
+            div.className = "list-row"; div.style.cursor="pointer";
+            div.innerHTML = `<div class="list-row-content"><div class="item-title">${bid}</div><div class="item-subtitle">${b.category} @${b.loc}</div></div>`;
             div.onclick = () => {
-                localDB[bid].items.push(itm);
-                localDB[currentBoxId].items.splice(moveTargetIdx,1);
-                const d1 = localDB[currentBoxId];
-                pushData({ action:'save', boxId:currentBoxId, location:d1.loc, items:d1.items, category:d1.category });
-                const d2 = localDB[bid];
-                pushData({ action:'save', boxId:bid, location:d2.loc, items:d2.items, category:d2.category });
+                localDB[bid].items.push(itm); localDB[currentBoxId].items.splice(moveTargetIdx,1);
+                pushData({ action:'save', boxId:currentBoxId, location:localDB[currentBoxId].loc, items:localDB[currentBoxId].items, category:localDB[currentBoxId].category });
+                pushData({ action:'save', boxId:bid, location:localDB[bid].loc, items:localDB[bid].items, category:localDB[bid].category });
                 alert(`移動しました`); document.getElementById('move-modal').style.display='none'; renderBoxUI();
             };
             list.appendChild(div);
@@ -644,49 +892,85 @@
         const key = document.getElementById('suggest-input').value.trim().toLowerCase();
         const res = document.getElementById('suggest-res');
         if(!key) return;
-        let hits = [];
-        let words = [key];
+        let hits = []; let words = [key];
         Object.keys(DICT).forEach(c => { if(DICT[c].some(w=>w.includes(key))) words=words.concat(DICT[c]); });
-
         Object.keys(localDB).forEach(id => {
-            const b = localDB[id];
-            let score = 0;
+            const b = localDB[id]; let score = 0;
             const content = b.items.map(i=>i.n.toLowerCase()).join(" ");
-            words.forEach(w => {
-                if(content.includes(w)) score += 10;
-                if(b.category.includes(w)) score += 5;
-            });
+            words.forEach(w => { if(content.includes(w)) score += 10; if(b.category.includes(w)) score += 5; });
             if(b.items.some(i => i.n.toLowerCase().includes(key))) score += 20;
             if(score>0) hits.push({id, loc:b.loc, cat:b.category, score});
         });
-        
         hits.sort((a,b)=>b.score-a.score);
-        if(hits.length>0) {
-            res.innerHTML = "<b>💡 おすすめ:</b><br>" + hits.slice(0,3).map(h=>
-                `・<u onclick="jumpToBox('${h.id}', '')" style="cursor:pointer;color:var(--primary);font-weight:bold;">${h.id}</u> (${h.cat}) @${h.loc}`
-            ).join("<br>");
+        if(hits.length>0) res.innerHTML = "<b><span class='material-symbols-rounded' style='font-size:14px;vertical-align:middle;'>lightbulb</span> おすすめ:</b><br>" + hits.slice(0,3).map(h=>`・<span class="jump-link" onclick="jumpToBox('${h.id}', '')">${h.id}</span> (${h.cat}) @${h.loc}`).join("<br>");
+        else res.innerHTML = "見つかりません。";
+    }
+
+    // --- 新機能: 統計とタグクラウド ---
+    function renderStats() {
+        const cats = {};
+        let boxCount = 0, itemCount = 0;
+        const tags = {};
+
+        Object.keys(localDB).forEach(id => {
+            boxCount++;
+            const b = localDB[id];
+            const c = b.category || "未分類";
+            cats[c] = (cats[c] || 0) + 1;
+            b.items.forEach(i => {
+                itemCount++;
+                if(i.t) i.t.forEach(t => tags[t] = (tags[t]||0)+1 );
+            });
+        });
+
+        // Stats
+        document.getElementById('total-count').innerText = `${boxCount}箱 / ${itemCount}点`;
+        const bar = document.getElementById('stat-bar'); bar.innerHTML="";
+        const leg = document.getElementById('stat-legend'); leg.innerHTML="";
+        const colors = ["#007AFF","#34C759","#FF9500","#FF3B30","#AF52DE","#5856D6","#FF2D55","#A2845E"];
+        let ci = 0;
+        
+        const sortedCats = Object.keys(cats).sort((a,b)=>cats[b]-cats[a]);
+        sortedCats.forEach(c => {
+            const pct = (cats[c]/boxCount)*100;
+            const col = colors[ci % colors.length];
+            const seg = document.createElement('div');
+            seg.className='stat-seg'; seg.style.width=pct+"%"; seg.style.background=col;
+            bar.appendChild(seg);
+            
+            const li = document.createElement('div');
+            li.className='stat-item';
+            li.innerHTML = `<div class="stat-dot" style="background:${col}"></div> ${c} (${cats[c]})`;
+            leg.appendChild(li);
+            ci++;
+        });
+
+        // Tags
+        const tc = document.getElementById('tag-cloud-area');
+        if(Object.keys(tags).length > 0) {
+            tc.style.display='block';
+            tc.innerHTML = Object.keys(tags).sort((a,b)=>tags[b]-tags[a]).slice(0,10).map(t=>
+                `<span class="clickable-tag" onclick="document.getElementById('filter-input').value='${t}';renderList();">${t}</span>`
+            ).join("");
         } else {
-            res.innerHTML = "見つかりません。";
+            tc.style.display='none';
         }
     }
 
     function renderList() {
+        renderStats(); // Update stats on list render
         const key = document.getElementById('filter-input').value.toLowerCase();
         const c = document.getElementById('list-container'); c.innerHTML="";
-        
         let words = [key];
         if(key) Object.keys(DICT).forEach(cat => { if(cat.includes(key)||DICT[cat].some(w=>w.includes(key))) words=words.concat(DICT[cat]); });
-
         Object.keys(localDB).forEach(id => {
             const d = localDB[id];
-            const txt = `${id} ${d.loc} ${d.category} ${d.items.map(i=>i.n).join(" ")}`.toLowerCase();
+            const txt = `${id} ${d.loc} ${d.category} ${d.items.map(i=>i.n).join(" ")} ${(d.items.flatMap(i=>i.t)||[]).join(" ")}`.toLowerCase();
             let match = !key;
             if(key) for(let w of words) if(txt.includes(w)) match=true;
-
             if(match) {
                 const div = document.createElement('div');
-                div.className = "box-row";
-                
+                div.className = "list-row"; div.style.cursor = "pointer";
                 let prevItems = d.items.slice(0,3).map(i => {
                     let name = i.n;
                     if(key) {
@@ -701,34 +985,28 @@
                     return name;
                 });
                 const prev = prevItems.join(", ") + (d.items.length>3?"...":"");
-
                 div.innerHTML = `
-                    <div style="display:flex; justify-content:space-between;">
-                        <div class="box-info-top">
-                            <span class="box-id">${id}</span>
-                            <span class="box-cat">${d.category}</span>
-                        </div>
-                        <div style="font-size:0.8rem; color:#64748b;">@${d.loc}</div>
+                    <div class="list-row-content">
+                        <div class="item-title">${id} <span class="tag-badge">${d.category}</span></div>
+                        <div class="item-subtitle">@${d.loc}</div>
+                        <div style="font-size:12px; color:var(--ios-text); margin-top:4px;">${prev}</div>
                     </div>
-                    <div style="font-size:0.85rem; color:#334155; margin-top:5px; line-height:1.4;">${prev}</div>
+                    <div style="color:var(--ios-subtext);"><span class="material-symbols-rounded">chevron_right</span></div>
                 `;
                 div.onclick=()=>{ tab('scan'); openBox(id); };
                 c.appendChild(div);
             }
         });
+        if(c.innerHTML === "") c.innerHTML = "<div style='padding:20px; text-align:center; color:var(--ios-subtext);'>見つかりません</div>";
     }
 
-    // --- 高速モード ---
-    let aiStream=null, recognition=null;
-    let isVoiceOnly=false, lastSpoken="";
-
+    let aiStream=null, recognition=null, isVoiceOnly=false, lastSpoken="";
     async function startFastMode(voiceOnly) {
         isVoiceOnly = voiceOnly;
         if(!voiceOnly && !aiModel) aiModel = await mobilenet.load();
         document.getElementById('fast-mode-ui').style.display='flex';
         const v = document.getElementById('fast-video');
         const ico = document.getElementById('voice-icon');
-        
         if(voiceOnly) {
             v.style.display='none'; document.getElementById('scan-line').style.display='none'; ico.style.display='block';
             document.getElementById('fast-log').innerText = "音声入力中...";
@@ -736,55 +1014,40 @@
             v.style.display='block'; document.getElementById('scan-line').style.display='block'; ico.style.display='none';
             try {
                 aiStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});
-                v.srcObject = aiStream;
-                loopAI();
+                v.srcObject = aiStream; loopAI();
             } catch(e){}
         }
-
         const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
         if(SR) {
-            recognition = new SR();
-            recognition.lang = 'ja-JP'; recognition.continuous = true; recognition.interimResults = false;
+            recognition = new SR(); recognition.lang = 'ja-JP'; recognition.continuous = true; recognition.interimResults = false;
             recognition.onend = () => { if(document.getElementById('fast-mode-ui').style.display==='flex') try{recognition.start()}catch(e){} };
-            recognition.onresult = (e) => {
-                const t = e.results[e.results.length-1][0].transcript.trim();
-                handleFastInput(t, false);
-            };
+            recognition.onresult = (e) => { handleFastInput(e.results[e.results.length-1][0].transcript.trim(), false); };
             try{recognition.start()}catch(e){}
         }
     }
-
     async function loopAI() {
         if(document.getElementById('fast-mode-ui').style.display==='none' || isVoiceOnly) return;
         const v = document.getElementById('fast-video');
-        if(v.readyState===4) {
-            if(Math.random() < 0.05) {
-                const p = await aiModel.classify(v);
-                if(p.length>0 && p[0].probability>0.65) {
-                    const ja = await translate(p[0].className);
-                    handleFastInput(ja, true);
-                }
+        if(v.readyState===4 && Math.random()<0.05) {
+            const p = await aiModel.classify(v);
+            if(p.length>0 && p[0].probability>0.65) {
+                const ja = await translate(p[0].className);
+                handleFastInput(ja, true);
             }
         }
         if(aiStream) requestAnimationFrame(loopAI);
     }
     async function translate(t) {
-        try {
-            const r = await fetch(`${GAS_URL}?action=translate&text=${t}&password=${password}`);
-            const j = await r.json(); return j.translated;
-        } catch(e){return t;}
+        try { const r = await fetch(`${GAS_URL}?action=translate&text=${t}&password=${password}`); const j=await r.json(); return j.translated; } catch(e){return t;}
     }
-
     function handleFastInput(t, isAI) {
         if(t==="終了") { stopFastMode(); return; }
-        if(t===lastSpoken) return; 
-        lastSpoken = t;
+        if(t===lastSpoken) return; lastSpoken = t;
         localDB[currentBoxId].items.push({n:t, c:1, t:[]});
         document.getElementById('fast-log').innerText = `登録: ${t}`;
         localDB[currentBoxId].category = autoCategorize(localDB[currentBoxId].items);
         beep();
     }
-
     function stopFastMode() {
         if(aiStream) aiStream.getTracks().forEach(t=>t.stop());
         if(recognition) recognition.stop();
@@ -793,10 +1056,9 @@
         saveBox(); renderBoxUI();
     }
 
-    // --- 印刷 ---
     function printQR() {
         const a=document.getElementById('print-area'); a.style.display='flex'; a.className='mode-single';
-        a.innerHTML=`<div class="print-card"><div class="print-id">${currentBoxId}</div><div id="pq"></div></div>`;
+        a.innerHTML=`<div class="print-card"><div class="print-id" style="font-size:4rem;font-weight:bold;margin-bottom:20px;">${currentBoxId}</div><div id="pq"></div></div>`;
         new QRCode(document.getElementById("pq"),{text:currentBoxId,width:256,height:256});
         setTimeout(()=>{window.print();a.style.display='none'},500);
     }
@@ -807,7 +1069,7 @@
             let id='BOX-'+Math.floor(1000+Math.random()*9000);
             while(localDB[id]) id='BOX-'+Math.floor(1000+Math.random()*9000);
             const d=document.createElement('div'); d.className='print-card';
-            d.innerHTML=`<div class="print-id">${id}</div><div id="pq${i}"></div>`;
+            d.innerHTML=`<div class="print-id" style="font-size:2rem;font-weight:bold;margin-bottom:10px;">${id}</div><div id="pq${i}"></div>`;
             a.appendChild(d);
             new QRCode(document.getElementById(`pq${i}`),{text:id,width:128,height:128});
         }
