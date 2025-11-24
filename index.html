@@ -5,6 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Smart Box V19</title>
     
+    <!-- PWA Settings Start -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/jpeg" href="smartbox.jpeg">
+    <link rel="apple-touch-icon" href="smartbox.jpeg">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="SmartBOX">
+    <meta name="theme-color" content="#F2F2F7">
+    <!-- PWA Settings End -->
+
     <!-- Libraries -->
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -1145,6 +1155,17 @@
             new QRCode(document.getElementById(`pq${i}`),{text:id,width:128,height:128});
         });
         setTimeout(()=>{window.print();a.style.display='none'},500);
+    }
+
+    // PWA Service Worker Registration
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+            navigator.serviceWorker.register('./sw.js').then(function(registration) {
+                console.log('ServiceWorker registration successful with scope: ', registration.scope);
+            }, function(err) {
+                console.log('ServiceWorker registration failed: ', err);
+            });
+        });
     }
 </script>
 </body>
