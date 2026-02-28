@@ -1,0 +1,1365 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Smart Box V19 Ultimate</title>
+    
+    <!-- PWA Settings Start -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/jpeg" href="smartbox.jpeg">
+    <link rel="apple-touch-icon" href="smartbox.jpeg">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="SmartBOX">
+    <meta name="theme-color" content="#F2F2F7">
+    <!-- PWA Settings End -->
+
+    <!-- Libraries -->
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@latest"></script>
+    <!-- Icon Font: Material Symbols Rounded -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0" />
+
+    <style>
+        :root {
+            /* ライトモード */
+            --ios-bg: #F2F2F7;
+            --ios-card: #FFFFFF;
+            --ios-text: #000000;
+            --ios-subtext: #8E8E93;
+            --ios-input-bg: #E3E3E8;
+            --ios-border: #C6C6C8;
+            --ios-blue: #007AFF;
+            --ios-red: #FF3B30;
+            --ios-orange: #FF9500;
+            --ios-green: #34C759;
+            
+            --btn-primary-bg: #1c1c1e;
+            --btn-primary-text: #ffffff;
+            --btn-sec-bg: #E5E5EA;
+            --btn-sec-text: #1c1c1e;
+            
+            --safe-area-bottom: env(safe-area-inset-bottom);
+        }
+
+        /* ダークモード */
+        body.dark-mode {
+            --ios-bg: #000000;
+            --ios-card: #1c1c1e;
+            --ios-text: #ffffff;
+            --ios-subtext: #98989d;
+            --ios-input-bg: #2c2c2e;
+            --ios-border: #38383a;
+            
+            --btn-primary-bg: #ffffff;
+            --btn-primary-text: #000000;
+            --btn-sec-bg: #2c2c2e;
+            --btn-sec-text: #ffffff;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--ios-bg);
+            color: var(--ios-text);
+            margin: 0; padding: 0;
+            padding-bottom: calc(80px + var(--safe-area-bottom));
+            -webkit-tap-highlight-color: transparent;
+            font-size: 16px; line-height: 1.5;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* アイコン */
+        .material-symbols-rounded {
+            font-size: 24px; vertical-align: middle; user-select: none;
+        }
+        .icon-lg { font-size: 48px; }
+        /* カテゴリアイコン用のスタイル */
+        .cat-icon {
+            font-size: 1.2em; vertical-align: -3px; margin-right: 4px;
+        }
+
+        /* レイアウト */
+        .container { max-width: 600px; margin: 0 auto; padding: 16px; }
+
+        /* ヘッダー */
+        .header {
+            position: sticky; top: 0; z-index: 90;
+            background: var(--ios-bg); padding: 12px 16px;
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 0.5px solid var(--ios-border);
+        }
+        .header h1 { margin: 0; font-size: 20px; font-weight: 700; display:flex; align-items:center; gap:8px; }
+        .sync-badge {
+            font-size: 12px; color: var(--ios-subtext);
+            background: var(--btn-sec-bg); padding: 4px 8px; border-radius: 12px; font-weight: 600;
+        }
+
+        /* カード */
+        .ios-group { margin-bottom: 24px; }
+        .ios-group-title {
+            text-transform: uppercase; font-size: 13px; color: var(--ios-subtext);
+            margin: 0 0 8px 16px; font-weight: normal;
+        }
+        .ios-card {
+            background: var(--ios-card); border-radius: 12px; overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            transition: box-shadow 0.3s;
+        }
+        .ios-card-content { padding: 16px; }
+
+        /* フォーム */
+        input[type="text"], input[type="number"], input[type="password"], select {
+            width: 100%; box-sizing: border-box; background: var(--ios-input-bg);
+            border: none; padding: 12px 16px; border-radius: 10px;
+            font-size: 17px; color: var(--ios-text); margin-bottom: 0; appearance: none;
+            transition: outline 0.2s;
+        }
+        input:focus { outline: 2px solid var(--ios-blue); }
+
+        /* ボタン */
+        button {
+            border: none; cursor: pointer; font-family: inherit; font-size: 17px; font-weight: 600;
+            border-radius: 12px; padding: 14px; width: 100%;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            transition: opacity 0.2s, transform 0.1s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s;
+        }
+        button:active { opacity: 0.7; transform: scale(0.95); }
+
+        .btn-primary { background: var(--btn-primary-bg); color: var(--btn-primary-text); }
+        .btn-secondary { background: var(--btn-sec-bg); color: var(--btn-sec-text); }
+        .btn-danger { background: rgba(255, 59, 48, 0.15); color: var(--ios-red); }
+        .btn-success { background: var(--btn-primary-bg); color: var(--btn-primary-text); }
+        .btn-warning { background: var(--ios-orange); color: white; }
+
+        /* リスト */
+        .list-row {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 12px 16px; background: var(--ios-card); 
+            border-bottom: 0.5px solid var(--ios-border);
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        .list-row:last-child { border-bottom: none; }
+        .list-row:active { background-color: var(--ios-input-bg); transform: scale(0.98); }
+        
+        .list-row-content { flex: 1; min-width: 0; margin-right: 12px; }
+        .item-title { font-size: 17px; font-weight: 500; color: var(--ios-text); display:flex; align-items:center; gap:6px; flex-wrap: wrap; word-break: break-all; }
+        .item-subtitle { font-size: 13px; color: var(--ios-subtext); margin-top: 4px; }
+
+        .tag-badge {
+            display: inline-block; background: var(--btn-sec-bg); color: var(--ios-text);
+            font-size: 11px; padding: 2px 6px; border-radius: 4px; margin-left: 4px;
+        }
+
+        .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+        .btn-sm { padding: 8px; font-size: 14px; width: auto; border-radius: 8px; }
+
+        /* ナビバー */
+        .nav-bar {
+            position: fixed; bottom: 0; left: 0; width: 100%;
+            background: var(--ios-card); border-top: 0.5px solid var(--ios-border);
+            display: flex; justify-content: space-around;
+            padding-bottom: var(--safe-area-bottom); z-index: 1000;
+        }
+        .nav-item { 
+            flex: 1; padding: 8px 0; text-align: center; font-size: 10px; color: var(--ios-subtext); 
+            cursor: pointer; display:flex; flex-direction:column; align-items:center; justify-content:center;
+            user-select: none; -webkit-user-select: none;
+            transition: color 0.2s;
+        }
+        .nav-item.active { color: var(--ios-text); font-weight: bold; }
+        .nav-item .material-symbols-rounded { font-size: 26px; margin-bottom: 2px; }
+
+        /* PCレイアウト */
+        @media (min-width: 768px) {
+            body { padding-bottom: 0; padding-left: 240px; background-color: var(--ios-bg); }
+            .container { max-width: 800px; padding: 40px; }
+            .nav-bar {
+                top: 0; left: 0; width: 240px; height: 100vh;
+                flex-direction: column; justify-content: flex-start;
+                border-top: none; border-right: 1px solid var(--ios-border);
+                padding-top: 40px; padding-bottom: 0; background: var(--ios-card);
+            }
+            .nav-item {
+                flex: 0; flex-direction: row; gap: 16px;
+                padding: 16px 32px; text-align: left; font-size: 16px; transition: 0.2s;
+                justify-content: flex-start;
+            }
+            .nav-item:hover { background: var(--btn-sec-bg); }
+            .nav-item .material-symbols-rounded { font-size: 24px; margin-bottom:0; }
+            .header { position: static; background: transparent; border-bottom: none; padding: 0 0 20px 0; }
+            .header h1 { font-size: 28px; }
+            #pc-camera-trigger { display: flex !important; }
+            #reader { display: none; }
+            #reader.active { display: block; }
+        }
+
+        /* ログイン */
+        #login-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--ios-bg); z-index: 9999;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+        }
+        #login-overlay input { text-align: center; letter-spacing: 0.5em; font-size: 24px; max-width: 200px; margin: 24px 0; background: var(--ios-card); }
+
+        /* モーダル */
+        .modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.4); z-index: 2000;
+            display: none; justify-content: center; align-items: flex-end;
+            backdrop-filter: blur(2px);
+            transition: opacity 0.3s ease;
+        }
+        .modal-content {
+            background: var(--ios-card); width: 100%; max-width: 600px;
+            border-radius: 20px 20px 0 0; padding: 24px;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.3); 
+            animation: slideUpModal 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            max-height: 85vh; overflow-y: auto;
+        }
+        @media (min-width: 768px) { .modal { align-items: center; } .modal-content { border-radius: 20px; } }
+        @keyframes slideUpModal { from{transform:translateY(100%); opacity:0;} to{transform:translateY(0); opacity:1;} }
+
+        #reader { width: 100%; border-radius: 16px; overflow: hidden; background: #000; min-height: 300px; }
+        #reader video { object-fit: cover; }
+        
+        .alert-box { background: var(--ios-card); border: 1px solid var(--ios-border); color: var(--ios-text); padding: 12px; border-radius: 10px; font-size: 14px; margin-bottom: 12px; display: none; animation: fadeInUp 0.3s ease-out; }
+        .alert-box.show { display: block; }
+        
+        .jump-link { font-weight: bold; text-decoration: underline; cursor: pointer; color: var(--ios-blue); }
+        .jump-link:active { opacity: 0.6; }
+
+        /* 検索ハイライト用 */
+        .hl { background: #FFD60A; color: black; border-radius: 2px; padding: 0 2px; font-weight: bold; }
+        
+        .highlight-yellow { 
+            background-color: #FFF9C4 !important; 
+            border-left: 4px solid #FBC02D !important; 
+            transition: background-color 0.5s;
+        }
+        .highlight-blue { 
+            background-color: #E3F2FD !important; 
+            border-left: 4px solid #2196F3 !important; 
+            transition: background-color 0.5s;
+        }
+        
+        body.dark-mode .highlight-yellow {
+            background-color: #3f3b1b !important;
+            border-left: 4px solid #FFD60A !important;
+        }
+        body.dark-mode .highlight-blue {
+            background-color: #1a2f42 !important;
+            border-left: 4px solid #0A84FF !important;
+        }
+
+        /* ビューアニメーション */
+        .view { display: none; }
+        .view.active { display: block; animation: fadeInUp 0.3s ease-out; }
+        
+        @keyframes fadeInUp { from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
+        .fade-in-up { animation: fadeInUp 0.3s ease-out backwards; }
+
+        #pc-camera-trigger {
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+            height: 300px; background: var(--btn-sec-bg); border-radius: 16px; color: var(--ios-text); cursor: pointer;
+        }
+        #pc-camera-trigger:hover { opacity: 0.8; }
+
+        /* 統計バー */
+        .stat-bar { height: 8px; border-radius: 4px; display: flex; overflow: hidden; margin-top: 10px; }
+        .stat-seg { height: 100%; transition: width 0.5s ease; }
+        .stat-legend { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; font-size: 12px; color: var(--ios-subtext); }
+        .stat-item { display: flex; align-items: center; gap: 4px; }
+        .stat-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+        /* 印刷設定 */
+        #print-area { display: none; }
+        @media print {
+            @page { size: A4; margin: 0; }
+            body > *:not(#print-area) { display: none !important; }
+            
+            #print-area { 
+                display: flex !important;
+                position: absolute; top: 0; left: 0; width: 210mm; min-height: 297mm;
+                background: white; color: black; font-family: sans-serif;
+                visibility: visible !important;
+            }
+            #print-area * { visibility: visible; }
+            
+            .print-card {
+                border: 2px dashed #333; 
+                display: flex; flex-direction: column; align-items: center; justify-content: center;
+                border-radius: 8px; box-sizing: border-box; padding: 5px; overflow: hidden;
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+            .print-id { font-size: 20pt; font-weight: 900; margin-bottom: 5px; }
+            .print-cat { font-size: 12pt; margin-bottom: 5px; font-weight: bold; border: 1px solid #333; padding: 2px 10px; border-radius: 20px; display: flex; align-items: center; gap: 5px; }
+            .print-cat .material-symbols-rounded { font-size: 1.2em; }
+
+            #print-area.mode-bulk {
+                display: grid !important; 
+                grid-template-columns: 1fr 1fr; 
+                grid-auto-rows: max-content; 
+                padding: 10mm; box-sizing: border-box; 
+                gap: 5mm; 
+            }
+            .mode-bulk .print-card { width: 92.5mm; height: 65.5mm; }
+            
+            #print-area.mode-single {
+                display: flex !important; align-items: center; justify-content: center;
+                width: 210mm; height: 297mm;
+            }
+            .mode-single .print-card { width: 92.5mm; height: 65.5mm; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ログイン画面 -->
+<div id="login-overlay">
+    <span class="material-symbols-rounded icon-lg" style="margin-bottom:10px;">inventory_2</span>
+    <h2 style="margin: 0; font-weight: 700;">Smart Box</h2>
+    <p style="color: var(--ios-subtext); margin-top: 5px;">V19 Ultimate</p>
+    <input type="password" id="login-pass" placeholder="••••" maxlength="8">
+    <button class="btn-primary" onclick="login()" style="max-width: 200px;">
+        <span class="material-symbols-rounded">lock_open</span> ロック解除
+    </button>
+    <p id="login-msg" style="color: var(--ios-red); margin-top: 20px; font-size: 14px; min-height: 20px;"></p>
+</div>
+
+<!-- ヘッダー -->
+<div class="header">
+    <h1><span class="material-symbols-rounded">inventory_2</span> Smart Box</h1>
+    <span id="sync-status" class="sync-badge">Wait</span>
+</div>
+
+<div class="container">
+
+    <!-- 1. 編集 (Scan) -->
+    <div id="view-scan" class="view active">
+        <div id="scan-ui" class="ios-group fade-in-up">
+            <div class="ios-group-title">QRコードをスキャン</div>
+            <div class="ios-card">
+                <div id="pc-camera-trigger" onclick="forceStartQR()">
+                    <span class="material-symbols-rounded icon-lg">photo_camera</span>
+                    <span style="font-weight:bold; margin-top:10px;">カメラを起動</span>
+                </div>
+                <div id="reader"></div>
+                <div style="padding: 16px; text-align: center; color: var(--ios-subtext); font-size: 13px;">
+                    ※カメラへのアクセスを許可してください
+                </div>
+            </div>
+        </div>
+
+        <div id="box-ui" style="display:none;" class="fade-in-up">
+            <div class="ios-group">
+                <div class="ios-group-title">ボックス情報</div>
+                <div class="ios-card">
+                    <div style="padding: 20px; border-bottom: 0.5px solid var(--ios-border); display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div id="disp-id" style="font-size: 24px; font-weight: 800;">BOX-000</div>
+                            <div style="display: flex; gap: 8px; margin-top: 4px;">
+                                <span id="disp-cat" class="tag-badge">📦 カテゴリ</span>
+                                <span id="disp-alert" style="display:none; font-size: 12px; font-weight: 700; color: var(--ios-red); background: rgba(255, 59, 48, 0.1); padding: 4px 8px; border-radius: 6px; align-items:center; gap:4px;">
+                                    <span class="material-symbols-rounded" style="font-size:14px;">warning</span>長期放置
+                                </span>
+                            </div>
+                        </div>
+                        <button class="btn-secondary" style="width: 50px; height: 50px; border-radius: 25px; padding: 0;" onclick="printQR()">
+                            <span class="material-symbols-rounded">print</span>
+                        </button>
+                    </div>
+                    <div style="padding: 16px;">
+                        <label style="font-size: 12px; font-weight: 600; color: var(--ios-subtext); display: block; margin-bottom: 8px;">保管場所</label>
+                        <input type="text" id="inp-loc" placeholder="例: クローゼット上段" onchange="saveBox()">
+                    </div>
+                </div>
+            </div>
+
+            <div id="existing-dup-alert" class="alert-box"></div>
+
+            <div class="ios-group">
+                <div class="ios-group-title" style="display:flex; justify-content:space-between; align-items:center;">
+                    <span>中身リスト</span>
+                    <button class="btn-sm btn-secondary" onclick="openBatchMove()" style="width:auto; padding:4px 10px; font-size:12px;">一括移動</button>
+                </div>
+                <div class="ios-card" style="min-height: 100px;">
+                    <div id="item-list-container"></div>
+                </div>
+            </div>
+
+            <div class="ios-group">
+                <div class="ios-group-title">アイテム追加</div>
+                <div class="ios-card ios-card-content">
+                    <div style="display: flex; gap: 10px; margin-bottom: 12px;">
+                        <input type="text" id="inp-name" placeholder="品名 (例: 電池 #備蓄)" style="flex: 1;">
+                        <button class="btn-primary" style="width: auto; padding: 0 20px;" onclick="addItem()">追加</button>
+                    </div>
+                    <div id="input-dup-alert" class="alert-box"></div>
+                    <div style="text-align: center; font-size: 12px; color: var(--ios-subtext); margin: 16px 0 8px;">スマート入力</div>
+                    <div class="btn-group">
+                        <button class="btn-success" onclick="startFastMode(false)">
+                            <span class="material-symbols-rounded">rocket_launch</span> カメラ+音声
+                        </button>
+                        <button class="btn-success" onclick="startFastMode(true)">
+                            <span class="material-symbols-rounded">mic</span> 音声のみ
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="cam-ui" class="ios-card" style="display:none; margin-top: 16px; padding: 16px;">
+                    <video id="cam-video" autoplay playsinline muted style="width:100%; border-radius: 12px; margin-bottom: 10px;"></video>
+                    <div id="ai-hint" style="text-align: center; font-weight: bold; margin-bottom: 12px;">解析中...</div>
+                    <div class="btn-group">
+                        <button class="btn-primary" onclick="snapAI()">決定</button>
+                        <button class="btn-secondary" onclick="stopCam()">閉じる</button>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 40px;">
+                <button class="btn-secondary" onclick="closeBox()" style="margin-bottom: 16px;">
+                    <span class="material-symbols-rounded">close</span> 閉じる
+                </button>
+                <button class="btn-danger" onclick="deleteBox()">
+                    <span class="material-symbols-rounded">delete</span> このボックスを削除
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. 探す (Find) -->
+    <div id="view-find" class="view">
+        <div class="ios-group">
+            <div class="ios-group-title">総合検索</div>
+            <div class="ios-card ios-card-content">
+                <div style="text-align:center; margin-bottom:20px;">
+                    <span class="material-symbols-rounded icon-lg" style="color:var(--ios-blue);">search</span>
+                    <div style="font-weight:bold; margin-top:10px; font-size:18px;">何を探していますか？</div>
+                    <div style="font-size:12px; color:var(--ios-subtext);">名前、場所、カテゴリで検索します</div>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="suggest-input" placeholder="例: 充電器" style="background: var(--ios-input-bg);" onkeyup="findSuggestion()">
+                </div>
+                <div id="suggest-res" style="margin-top: 20px; font-size: 15px; line-height: 1.6;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. 一覧 (List) -->
+    <div id="view-list" class="view">
+        <div class="ios-group">
+            <div class="ios-group-title">収納アシスタント</div>
+            <div class="ios-card ios-card-content" style="border: 2px solid var(--btn-sec-bg);">
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+                    <span class="material-symbols-rounded" style="color:var(--ios-orange);">move_to_inbox</span>
+                    <span style="font-weight:bold;">これ、どこに入れる？</span>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="placement-input" placeholder="新しいアイテム名" style="background: var(--ios-input-bg);">
+                    <button class="btn-secondary" style="width: auto;" onclick="findPlacement()">提案</button>
+                </div>
+                <div id="placement-res" style="margin-top: 12px; font-size: 14px; line-height: 1.6; display:none;"></div>
+            </div>
+        </div>
+
+        <div class="ios-group">
+            <div class="ios-group-title">収納データ</div>
+            <div class="ios-card ios-card-content">
+                <div style="display:flex; justify-content:space-between;">
+                    <div style="font-weight:bold; font-size:14px;">カテゴリ割合</div>
+                    <div style="font-size:12px; color:var(--ios-subtext);" id="total-count"></div>
+                </div>
+                <div class="stat-bar" id="stat-bar"></div>
+                <div class="stat-legend" id="stat-legend"></div>
+            </div>
+        </div>
+
+        <div class="ios-group">
+            <div class="ios-group-title">ボックス一覧 (フィルタ)</div>
+            <div style="padding: 0 0 12px 0;">
+                <input type="text" id="filter-input" placeholder="名前、場所、カテゴリで絞り込み" onkeyup="renderList()" style="padding-left:16px;">
+            </div>
+            <div class="ios-card">
+                <div id="list-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. 設定 -->
+    <div id="view-settings" class="view">
+        <div class="ios-group">
+            <div class="ios-group-title">外観設定</div>
+            <div class="ios-card">
+                <div class="list-row" onclick="toggleTheme()" style="cursor: pointer;">
+                    <div class="list-row-content">
+                        <div class="item-title"><span class="material-symbols-rounded">dark_mode</span> ダークモード</div>
+                    </div>
+                    <div id="theme-label" style="color: var(--ios-subtext); font-size:14px;">オフ</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="ios-group">
+            <div class="ios-group-title">データ管理</div>
+            <div class="ios-card">
+                <div class="list-row" onclick="exportCSV()" style="cursor: pointer;">
+                    <div class="list-row-content">
+                        <div class="item-title"><span class="material-symbols-rounded">download</span> CSV書き出し</div>
+                    </div>
+                </div>
+                <div class="list-row" onclick="fetchData(true)" style="cursor: pointer;">
+                    <div class="list-row-content">
+                        <div class="item-title"><span class="material-symbols-rounded">cloud_sync</span> データ強制同期</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="ios-group">
+            <div class="ios-group-title">管理者ツール</div>
+            <div class="ios-card">
+                <div class="list-row" onclick="reCategorizeAll()" style="cursor: pointer;">
+                    <div class="list-row-content">
+                        <div class="item-title"><span class="material-symbols-rounded" style="color:var(--ios-orange);">auto_fix_high</span> AI自動整理</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="ios-group">
+            <div class="ios-group-title">印刷</div>
+            <div class="ios-card">
+                <div class="list-row" onclick="openPrintConfig()" style="cursor: pointer;">
+                    <div class="list-row-content">
+                        <div class="item-title"><span class="material-symbols-rounded">add_box</span> 新規QRコード一括印刷</div>
+                        <div class="item-subtitle">新しい箱用のQRを生成</div>
+                    </div>
+                    <div style="color: var(--ios-subtext);">
+                        <span class="material-symbols-rounded">chevron_right</span>
+                    </div>
+                </div>
+                <div class="list-row" onclick="openExistingPrintConfig()" style="cursor: pointer;">
+                    <div class="list-row-content">
+                        <div class="item-title"><span class="material-symbols-rounded">print</span> 既存の箱を再印刷</div>
+                        <div class="item-subtitle">登録済みの箱を選択して印刷</div>
+                    </div>
+                    <div style="color: var(--ios-subtext);">
+                        <span class="material-symbols-rounded">chevron_right</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="ios-group">
+             <div class="ios-card">
+                <div class="list-row" style="cursor: pointer;">
+                    <button class="btn-danger" style="background: transparent; justify-content: flex-start; padding: 0;" onclick="logout()">
+                        ログアウト
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- ナビゲーション -->
+<div class="nav-bar">
+    <div class="nav-item active" onclick="tab('scan')"><span class="material-symbols-rounded">photo_camera</span><span>編集</span></div>
+    <div class="nav-item" onclick="tab('find')"><span class="material-symbols-rounded">search</span><span>探す</span></div>
+    <div class="nav-item" onclick="tab('list')"><span class="material-symbols-rounded">inventory</span><span>一覧</span></div>
+    <div class="nav-item" onclick="tab('settings')"><span class="material-symbols-rounded">settings</span><span>設定</span></div>
+</div>
+
+<!-- モーダル: 単体アイテム移動 -->
+<div id="move-modal" class="modal">
+    <div class="modal-content">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+            <h3 style="margin:0; display:flex; align-items:center; gap:8px;"><span class="material-symbols-rounded">local_shipping</span> アイテム移動</h3>
+            <button class="btn-secondary btn-sm" onclick="document.getElementById('move-modal').style.display='none'">キャンセル</button>
+        </div>
+        <p id="move-info" style="font-weight:600; margin-bottom:16px;"></p>
+        <div class="ios-card" style="border: 1px solid var(--ios-border);">
+            <div id="move-list" style="max-height: 40vh; overflow-y: auto;"></div>
+        </div>
+    </div>
+</div>
+
+<!-- モーダル: 一括アイテム移動 -->
+<div id="batch-move-modal" class="modal">
+    <div class="modal-content">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+            <h3 style="margin:0;">まとめて移動</h3>
+            <button class="btn-secondary btn-sm" onclick="document.getElementById('batch-move-modal').style.display='none'">キャンセル</button>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <div style="font-size:14px; color:var(--ios-subtext);">移動するアイテムを選択:</div>
+            <button class="btn-sm btn-secondary" onclick="toggleAllBatchCheck()">すべて選択</button>
+        </div>
+        <div id="batch-item-list" style="max-height: 200px; overflow-y: auto; border: 1px solid var(--ios-border); border-radius:8px; padding:10px; margin-bottom:15px;"></div>
+        
+        <div style="margin-bottom:10px; font-size:14px; color:var(--ios-subtext);">移動先のボックスを選択:</div>
+        <div id="batch-box-list" style="max-height: 200px; overflow-y: auto; border: 1px solid var(--ios-border); border-radius:8px;"></div>
+        
+        <button class="btn-primary" onclick="execBatchMove()" style="margin-top:15px;">移動実行</button>
+    </div>
+</div>
+
+<!-- モーダル: 新規印刷設定 -->
+<div id="print-config-modal" class="modal">
+    <div class="modal-content">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+            <h3 style="margin:0;">新規印刷設定 (計8枚)</h3>
+            <button class="btn-secondary btn-sm" onclick="document.getElementById('print-config-modal').style.display='none'">キャンセル</button>
+        </div>
+        <div id="print-config-list" style="max-height: 50vh; overflow-y: auto; margin-bottom:15px;"></div>
+        <div style="text-align:right; font-weight:bold; margin-bottom:10px;" id="print-total-count">合計: 0枚</div>
+        <button class="btn-primary" onclick="execBulkPrint()">印刷プレビュー作成</button>
+    </div>
+</div>
+
+<!-- モーダル: 既存印刷設定 -->
+<div id="existing-print-modal" class="modal">
+    <div class="modal-content">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+            <h3 style="margin:0;">既存の箱を再印刷</h3>
+            <button class="btn-secondary btn-sm" onclick="document.getElementById('existing-print-modal').style.display='none'">キャンセル</button>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <div style="font-size:14px; color:var(--ios-subtext);">印刷する箱を選択:</div>
+            <button class="btn-sm btn-secondary" onclick="toggleAllExistingPrintCheck()">全選択/解除</button>
+        </div>
+        <div id="existing-print-list" style="max-height: 40vh; overflow-y: auto; border: 1px solid var(--ios-border); border-radius:8px; padding:10px; margin-bottom:15px;"></div>
+        <div style="text-align:right; font-weight:bold; margin-bottom:10px;" id="existing-print-count">選択中: 0個</div>
+        <button class="btn-primary" onclick="execExistingBulkPrint()">印刷プレビュー作成</button>
+    </div>
+</div>
+
+<div id="fast-mode-ui" style="position: fixed; top:0; left:0; width:100%; height:100%; z-index: 1500; display:none; flex-direction:column; background:black;">
+    <div style="flex:1; position:relative; overflow:hidden; display:flex; justify-content:center; align-items:center;">
+        <video id="fast-video" autoplay playsinline muted style="width:100%; height:100%; object-fit:cover; opacity:0.7;"></video>
+        <div id="voice-icon" style="display:none; color:white;"><span class="material-symbols-rounded icon-lg" style="font-size:64px;">mic</span></div>
+    </div>
+    <div class="fast-overlay" style="position: absolute; bottom: 0; width: 100%; padding: 20px; box-sizing: border-box; text-align: center; color: white; background: rgba(0,0,0,0.8);">
+        <div id="fast-log" style="font-size: 24px; font-weight: bold; margin-bottom: 24px;">待機中...</div>
+        <button class="btn-secondary" onclick="stopFastMode()" style="background: white; color: black; max-width: 200px; margin: 0 auto;">終了</button>
+    </div>
+</div>
+
+<div id="print-area"></div>
+
+<script>
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbydf1nPxbkN6jc82UgwBVF8WSE85ZMnmVUFjpKeE8RpPHpo0nluGnzo3LSLkbime9BDew/exec";
+
+    let localDB = {}; 
+    let currentBoxId = null;
+    let qrScanner = null;
+    let aiModel = null;
+    let password = localStorage.getItem('sb_pass') || "";
+    let moveTargetIdx = null;
+    
+    let targetHighlightItems =[]; 
+    let targetHighlightColor = ""; // 'yellow' or 'blue'
+    
+    let audioCtx = null;
+
+    const CAT_ICONS = {
+        "PC・ガジェット": "devices", "衣類・ファッション": "checkroom", "文房具": "edit",
+        "日用品": "cleaning_services", "キッチン": "skillet", "工具・DIY": "construction",
+        "趣味・おもちゃ": "sports_esports", "アウトドア": "camping", "季節用品": "ac_unit",
+        "書類": "description", "未分類": "inventory_2"
+    };
+    function getCatIcon(c) {
+        const icon = CAT_ICONS[c] || "inventory_2";
+        return `<span class="material-symbols-rounded cat-icon">${icon}</span>`;
+    }
+
+    function getStatusBadge(s) {
+        if (s === 1) return `<span class="tag-badge" style="background:var(--ios-blue);color:white;font-size:10px;">使用中</span>`;
+        if (s === 2) return `<span class="tag-badge" style="background:var(--ios-red);color:white;font-size:10px;">行方不明</span>`;
+        return "";
+    }
+
+    function initAudio() { const AC = window.AudioContext || window.webkitAudioContext; if (AC) audioCtx = new AC(); }
+    function beep() {
+        if(!audioCtx) initAudio();
+        if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.type = 'sine'; osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+    }
+    document.addEventListener('click', (e) => { if(e.target.tagName === 'BUTTON' || e.target.closest('button')) beep(); });
+
+    const DICT = {
+        "PC・ガジェット":["PC","パソコン","マウス","キーボード","モニター","ケーブル","USB","充電器","スマホ","電池","イヤホン","HDD","SSD","SD","マイク","ルーター","タブレット","iPad","Apple", "アダプタ", "コード", "バッテリー", "カメラ"],
+        "衣類・ファッション":["服","シャツ","ズボン","パンツ","スカート","下着","靴下","コート","ジャケット","帽子","マフラー","ベルト","手袋","スーツ","ネクタイ","鞄","バッグ","靴","ブーツ","サンダル","パジャマ", "Tシャツ", "インナー", "アウター"],
+        "文房具":["ペン","鉛筆","消しゴム","定規","ハサミ","カッター","のり","テープ","ホッチキス","付箋","ノート","メモ","ファイル","電卓","筆箱", "クリップ", "バインダー", "マーカー", "はさみ"],
+        "日用品":["ティッシュ","洗剤","シャンプー","石鹸","歯ブラシ","マスク","薬","掃除","ゴミ袋","スポンジ","ハンガー","カイロ","柔軟剤","芳香剤","電池", "トイレットペーパー", "タオル", "雑巾", "スプレー", "絆創膏", "綿棒", "爪切り", "ブラシ"],
+        "キッチン":["鍋","フライパン","皿","コップ","箸","スプーン","フォーク","ラップ","アルミホイル","食品","調味料","水筒","弁当箱","保存容器","ボウル", "タッパー", "包丁", "まな板", "グラス", "マグカップ", "ふきん"],
+        "工具・DIY":["ドライバー","レンチ","ネジ","ガムテープ","軍手","紐","接着剤","メジャー","ドリル","ペンチ", "釘", "ハンマー", "ノコギリ", "ボンド", "結束バンド", "ペンキ"],
+        "趣味・おもちゃ":["ゲーム","スイッチ","PS5","フィギュア","プラモ","ぬいぐるみ","本","漫画","CD","DVD","カメラ","楽器","楽譜","グッズ", "ソフト", "コントローラー", "ボードゲーム", "カード", "パズル"],
+        "アウトドア":["テント","寝袋","ランタン","椅子","リュック","雨具","自転車","釣り","クーラーボックス", "キャンプ", "バーベキュー", "コンロ", "シート", "レジャーシート", "水着"],
+        "季節用品":["扇風機","ヒーター","ストーブ","こたつ","加湿器","クリスマス","正月","プール","浮き輪", "ツリー", "オーナメント", "ハロウィン", "飾り", "ひな人形", "五月人形", "うちわ"],
+        "書類":["契約書","通帳","印鑑","パスポート","年金","保険","証書","説明書", "領収書", "レシート", "明細", "チケット", "診察券", "カード", "名刺", "カタログ", "パンフレット", "取扱説明書", "保証書"]
+    };
+
+    window.onload = () => {
+        initAudio();
+        if(localStorage.getItem('sb_dark')==='1') document.body.classList.add('dark-mode');
+        updateThemeLabel();
+        if(password) { document.getElementById('login-overlay').style.display='none'; fetchData(); }
+        renderList(); 
+        document.getElementById('inp-name').addEventListener('input', checkInputDuplicate);
+        
+        window.onafterprint = function() {
+            const a = document.getElementById('print-area');
+            a.style.display = 'none';
+            a.innerHTML = "";
+        };
+    };
+
+    function toggleTheme() { document.body.classList.toggle('dark-mode'); localStorage.setItem('sb_dark', document.body.classList.contains('dark-mode')?'1':'0'); updateThemeLabel(); }
+    function updateThemeLabel() { document.getElementById('theme-label').innerText = document.body.classList.contains('dark-mode') ? 'オン' : 'オフ'; }
+
+    function exportCSV() {
+        if(Object.keys(localDB).length === 0) { alert("データがありません"); return; }
+        let csv = "\uFEFFBOX_ID,保管場所,カテゴリ,アイテム名,タグ,ステータス,更新日\n";
+        Object.keys(localDB).forEach(id => {
+            const b = localDB[id];
+            if(b.items.length === 0) { csv += `"${id}","${b.loc}","${b.category}","(なし)","","","${b.updated}"\n`; } 
+            else { 
+                b.items.forEach(i => { 
+                    const tags = (i.t||[]).join(" "); 
+                    const st = i.s === 1 ? "使用中" : (i.s === 2 ? "行方不明" : "通常");
+                    csv += `"${id}","${b.loc}","${b.category}","${i.n}","${tags}","${st}","${b.updated}"\n`; 
+                }); 
+            }
+        });
+        const blob = new Blob([csv], { type: 'text/csv' }); const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob); a.download = `smartbox_backup_${new Date().toISOString().slice(0,10)}.csv`; a.click();
+    }
+
+    function login() {
+        const p = document.getElementById('login-pass').value; document.getElementById('login-msg').innerText = "認証中...";
+        fetch(`${GAS_URL}?password=${p}`).then(r => r.json()).then(d => {
+            if(d.error) { document.getElementById('login-msg').innerText = "パスワードが違います"; } else {
+                password = p; localStorage.setItem('sb_pass', p);
+                document.getElementById('login-overlay').style.opacity = 0;
+                setTimeout(()=>document.getElementById('login-overlay').style.display='none', 300);
+                localDB = d; renderList();
+            }
+        }).catch(e => document.getElementById('login-msg').innerText = "通信エラー");
+    }
+    function logout() { localStorage.removeItem('sb_pass'); location.reload(); }
+
+    async function fetchData(force=false) {
+        document.getElementById('sync-status').innerText = "Syncing...";
+        try {
+            const res = await fetch(`${GAS_URL}?password=${password}`); const json = await res.json();
+            if(json.error) { alert("認証エラー"); logout(); return; }
+            localDB = json; document.getElementById('sync-status').innerText = "Ready";
+            if(force) { alert("同期完了"); renderList(); }
+        } catch(e){ document.getElementById('sync-status').innerText = "Error"; }
+    }
+    async function pushData(payload) {
+        document.getElementById('sync-status').innerText = "Saving..."; payload.password = password;
+        try { await fetch(GAS_URL, { method:'POST', headers:{ "Content-Type":"text/plain" }, body:JSON.stringify(payload) }); document.getElementById('sync-status').innerText = "Saved"; } catch(e){ document.getElementById('sync-status').innerText = "Save Error"; }
+    }
+
+    function tab(t, forceOpen = false) {
+        if (!forceOpen && t === 'scan' && document.getElementById('view-scan').classList.contains('active') && currentBoxId) {
+            closeBox();
+            return;
+        }
+
+        document.querySelectorAll('.view').forEach(e => e.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
+        document.getElementById('view-'+t).classList.add('active');
+        const idx = t === 'scan' ? 0 : t === 'find' ? 1 : t === 'list' ? 2 : 3;
+        document.querySelectorAll('.nav-item')[idx].classList.add('active');
+        
+        const isDesktop = window.innerWidth >= 768;
+        if(t==='scan') {
+            if(isDesktop) { stopQR(); document.getElementById('pc-camera-trigger').style.display = 'flex'; document.getElementById('reader').classList.remove('active'); } 
+            else { setTimeout(startQR,300); }
+        } else { stopQR(); }
+        if(t==='list') setTimeout(renderList, 10);
+        if(t==='find') setTimeout(findSuggestion, 10);
+    }
+
+    function forceStartQR() { document.getElementById('pc-camera-trigger').style.display = 'none'; document.getElementById('reader').classList.add('active'); startQR(); }
+    function startQR() {
+        if(currentBoxId || qrScanner) return;
+        const r = document.getElementById("reader");
+        if(r && r.offsetParent!==null) {
+            const sc = new Html5Qrcode("reader");
+            sc.start({facingMode:"environment"},{fps:10,qrbox:250},(t)=>{ beep(); openBox(t); })
+            .then(()=>{qrScanner=sc}).catch(()=>{ if(window.innerWidth<768) setTimeout(startQR,500); });
+        }
+    }
+    function stopQR() { if(qrScanner) qrScanner.stop().then(()=>{qrScanner.clear();qrScanner=null}).catch(()=>{qrScanner=null}); }
+
+    function openBox(id) {
+        stopQR(); currentBoxId = id;
+        document.getElementById('scan-ui').style.display='none'; document.getElementById('box-ui').style.display='block';
+        if(!localDB[id]) localDB[id] = { loc:"", items:[], category:"未分類", updated: new Date() };
+        renderBoxUI();
+    }
+    function closeBox() { 
+        currentBoxId=null; targetHighlightItems=[]; targetHighlightColor="";
+        document.getElementById('box-ui').style.display='none'; document.getElementById('scan-ui').style.display='block'; 
+        if(window.innerWidth >= 768) { document.getElementById('pc-camera-trigger').style.display = 'flex'; document.getElementById('reader').classList.remove('active'); } else { setTimeout(startQR,300); }
+    }
+    
+    function jumpToBox(boxId, itemName, color = 'yellow') {
+        targetHighlightItems = itemName ? [itemName] :[]; 
+        targetHighlightColor = color;
+        tab('scan', true); 
+        openBox(boxId);
+    }
+
+    function renderBoxUI() {
+        const d = localDB[currentBoxId];
+        document.getElementById('disp-id').innerText = currentBoxId;
+        document.getElementById('disp-cat').innerHTML = `${getCatIcon(d.category)} ${d.category || "未分類"}`;
+        document.getElementById('inp-loc').value = d.loc;
+        const diff = (new Date() - new Date(d.updated)) / (1000*60*60*24);
+        document.getElementById('disp-alert').style.display = (diff > 365) ? 'flex' : 'none';
+        checkExistingDuplicates(d.items);
+        
+        const list = document.getElementById('item-list-container'); list.innerHTML = "";
+        if(d.items.length === 0) list.innerHTML = `<div style="text-align:center; padding:20px; color:var(--ios-subtext);">アイテムがありません</div>`;
+        
+        d.items.forEach((item, i) => {
+            const row = document.createElement('div'); row.className = "list-row fade-in-up";
+            const tags = (item.t||[]).map(t=>`<span class="tag-badge">${t}</span>`).join("");
+            const st = item.s || 0;
+            const stBadge = getStatusBadge(st);
+            let stAction = "";
+            
+            if(st === 1 || st === 2) {
+                stAction = `<button class="btn-secondary btn-sm" onclick="toggleStatus(${i}, 0)" title="通常に戻す"><span class="material-symbols-rounded">undo</span></button>`;
+            } else {
+                stAction = `
+                    <button class="btn-secondary btn-sm" onclick="toggleStatus(${i}, 1)" title="使用中"><span class="material-symbols-rounded">front_hand</span></button>
+                    <button class="btn-secondary btn-sm" onclick="toggleStatus(${i}, 2)" title="行方不明"><span class="material-symbols-rounded">question_mark</span></button>
+                `;
+            }
+
+            const shouldHighlight = targetHighlightItems.some(hi => item.n.toLowerCase().includes(hi.toLowerCase()));
+            if(shouldHighlight) {
+                if (targetHighlightColor === 'blue') {
+                    row.classList.add('highlight-blue');
+                } else {
+                    row.classList.add('highlight-yellow');
+                }
+                setTimeout(() => row.scrollIntoView({behavior: "smooth", block: "center"}), 300);
+            }
+            
+            row.innerHTML = `
+                <div class="list-row-content">
+                    <div class="item-title">${item.n} ${tags} ${stBadge}</div>
+                </div>
+                <div style="display: flex; gap: 4px; flex-wrap: wrap; align-items: center; justify-content: flex-end;">
+                    ${stAction}
+                    <button class="btn-secondary btn-sm" onclick="openMoveModal(${i})" title="移動"><span class="material-symbols-rounded">local_shipping</span></button>
+                    <button class="btn-danger btn-sm" onclick="delItem(${i})" title="削除"><span class="material-symbols-rounded">delete</span></button>
+                </div>`;
+            list.appendChild(row);
+        });
+    }
+
+    function toggleStatus(i, status) {
+        localDB[currentBoxId].items[i].s = status;
+        saveBox();
+        renderBoxUI();
+    }
+
+    function checkExistingDuplicates(items) {
+        const alertBox = document.getElementById('existing-dup-alert'); alertBox.classList.remove('show'); alertBox.innerHTML = "";
+        if(!items || items.length === 0) return;
+        let foundDupes =[];
+        for(let item of items) {
+            for(let bid of Object.keys(localDB)) {
+                if(bid === currentBoxId) continue;
+                if(localDB[bid].items.some(i => i.n.includes(item.n) || item.n.includes(i.n))) {
+                    foundDupes.push(`<div><span class="material-symbols-rounded" style="color:var(--ios-orange);font-size:16px;">lightbulb</span> <span class="jump-link" onclick="jumpToBox('${bid}', null, 'blue')">${bid}</span> にも『<span class="jump-link" onclick="jumpToBox('${bid}', '${item.n}', 'blue')">${item.n}</span>』があります</div>`);
+                    if(foundDupes.length >= 3) break;
+                }
+            }
+            if(foundDupes.length >= 3) break;
+        }
+        if(foundDupes.length > 0) { alertBox.innerHTML = foundDupes.join(""); alertBox.classList.add('show'); }
+    }
+
+    function checkInputDuplicate() {
+        const val = document.getElementById('inp-name').value.trim();
+        const alertDiv = document.getElementById('input-dup-alert');
+        if(val.length < 2) { alertDiv.classList.remove('show'); return; }
+        let suggestedBoxId = null; let foundName = "";
+        Object.keys(localDB).forEach(bid => {
+            if(bid === currentBoxId) return;
+            const match = localDB[bid].items.find(i => i.n.includes(val) || val.includes(i.n));
+            if(match) { suggestedBoxId = bid; foundName = match.n; }
+        });
+        if(suggestedBoxId) {
+            const cat = localDB[suggestedBoxId].category;
+            alertDiv.innerHTML = `<div><span class="material-symbols-rounded" style="color:var(--ios-orange);font-size:16px;">lightbulb</span> <span class="jump-link" onclick="jumpToBox('${suggestedBoxId}', null, 'blue')">${suggestedBoxId}</span> (${cat}) に似た物「<span class="jump-link" onclick="jumpToBox('${suggestedBoxId}', '${foundName}', 'blue')">${foundName}</span>」があります。</div>`;
+            alertDiv.classList.add('show');
+        } else { alertDiv.classList.remove('show'); }
+    }
+
+    function autoCategorize(items) {
+        if (!items || items.length === 0) return "未分類";
+        let scores = {};
+        items.forEach(itm => {
+            const txt = (itm.n + (itm.t||[]).join("")).toLowerCase();
+            Object.keys(DICT).forEach(cat => {
+                DICT[cat].forEach(w => {
+                    const wl = w.toLowerCase();
+                    if(txt.includes(wl)) {
+                        scores[cat] = (scores[cat] || 0) + (wl.length); 
+                    }
+                });
+            });
+        });
+        let max = 0, best = "未分類"; 
+        Object.keys(scores).forEach(c => { 
+            if(scores[c] > max) { max = scores[c]; best = c; } 
+        });
+        return best;
+    }
+
+    function reCategorizeAll() {
+        if(!confirm("⚠️ 【警告】\n全ボックスのカテゴリを自動再設定します。\nよろしいですか？")) return;
+        const u = prompt("実行するには「整理」と入力"); if(u !== "整理") { alert("キャンセルしました"); return; }
+        let count = 0;
+        Object.keys(localDB).forEach(bid => {
+            const box = localDB[bid]; const newCat = autoCategorize(box.items);
+            if(newCat !== "未分類" && newCat !== box.category) { box.category = newCat; pushData({ action:'save', boxId:bid, location:box.loc, items:box.items, category:box.category }); count++; }
+        });
+        alert(`${count}個のボックスを更新しました`);
+    }
+
+    function addItem() {
+        const val = document.getElementById('inp-name').value.trim(); if(!val) return;
+        const tags = val.match(/#[^\s]+/g) ||[]; const name = val.replace(/#[^\s]+/g, "").trim();
+        localDB[currentBoxId].items.push({ n:name, c:1, t:tags, s:0 });
+        document.getElementById('inp-name').value = ""; document.getElementById('input-dup-alert').classList.remove('show');
+        localDB[currentBoxId].category = autoCategorize(localDB[currentBoxId].items); saveBox(); renderBoxUI();
+    }
+    function delItem(i) { if(confirm("削除しますか？")) { localDB[currentBoxId].items.splice(i, 1); saveBox(); renderBoxUI(); } }
+    async function deleteBox() { if(!confirm("箱ごと削除しますか？")) return; delete localDB[currentBoxId]; await pushData({ action:'delete', boxId:currentBoxId }); alert("削除しました"); closeBox(); }
+    function saveBox() {
+        const d = localDB[currentBoxId]; d.loc = document.getElementById('inp-loc').value; d.updated = new Date();
+        pushData({ action:'save', boxId:currentBoxId, location:d.loc, items:d.items, category:d.category });
+    }
+
+    function openMoveModal(i) {
+        moveTargetIdx = i; const itm = localDB[currentBoxId].items[i];
+        document.getElementById('move-info').innerHTML = `「${itm.n}」を移動`;
+        const list = document.getElementById('move-list'); list.innerHTML="";
+        Object.keys(localDB).forEach(bid => {
+            if(bid === currentBoxId) return; const b = localDB[bid];
+            const div = document.createElement('div'); div.className = "list-row fade-in-up"; div.style.cursor="pointer";
+            div.innerHTML = `<div class="list-row-content"><div class="item-title">${bid}</div><div class="item-subtitle">${b.category} @${b.loc}</div></div>`;
+            div.onclick = () => {
+                localDB[bid].items.push(itm); localDB[currentBoxId].items.splice(moveTargetIdx,1);
+                pushData({ action:'save', boxId:currentBoxId, location:localDB[currentBoxId].loc, items:localDB[currentBoxId].items, category:localDB[currentBoxId].category });
+                pushData({ action:'save', boxId:bid, location:localDB[bid].loc, items:localDB[bid].items, category:localDB[bid].category });
+                alert(`移動しました`); document.getElementById('move-modal').style.display='none'; renderBoxUI();
+            };
+            list.appendChild(div);
+        });
+        document.getElementById('move-modal').style.display='flex';
+    }
+
+    // --- まとめて移動 ---
+    function openBatchMove() {
+        const d = localDB[currentBoxId];
+        if(!d.items.length) { alert("移動するアイテムがありません"); return; }
+        
+        const iList = document.getElementById('batch-item-list'); iList.innerHTML = "";
+        d.items.forEach((item, i) => {
+            const div = document.createElement('div');
+            div.className = "fade-in-up";
+            div.style.padding="8px"; div.style.borderBottom="1px solid var(--ios-border)";
+            div.innerHTML = `<label style="display:flex;align-items:center;gap:10px;"><input type="checkbox" value="${i}" class="batch-check" style="width:20px;height:20px;margin:0;"> ${item.n}</label>`;
+            iList.appendChild(div);
+        });
+
+        const bList = document.getElementById('batch-box-list'); bList.innerHTML = "";
+        Object.keys(localDB).forEach(bid => {
+            if(bid === currentBoxId) return;
+            const b = localDB[bid];
+            const div = document.createElement('div');
+            div.className = "list-row fade-in-up"; div.style.cursor="pointer";
+            div.innerHTML = `<label style="display:flex;align-items:center;gap:10px;width:100%;cursor:pointer;"><input type="radio" name="batch-target-box" value="${bid}" style="width:20px;height:20px;margin:0;"> <div><div style="font-weight:bold;">${bid}</div><div style="font-size:12px;color:#888;">${b.category} @${b.loc}</div></div></label>`;
+            bList.appendChild(div);
+        });
+        document.getElementById('batch-move-modal').style.display='flex';
+    }
+
+    function toggleAllBatchCheck() {
+        const checks = document.querySelectorAll('.batch-check');
+        const allChecked = Array.from(checks).every(c => c.checked);
+        checks.forEach(c => c.checked = !allChecked);
+    }
+
+    function execBatchMove() {
+        const checks = document.querySelectorAll('.batch-check:checked');
+        if(checks.length===0) { alert("アイテムを選択してください"); return; }
+        const indices = Array.from(checks).map(c=>parseInt(c.value)).sort((a,b)=>b-a);
+        
+        const radio = document.querySelector('input[name="batch-target-box"]:checked');
+        if(!radio) { alert("移動先のボックスを選択してください"); return; }
+        const targetBid = radio.value;
+
+        indices.forEach(idx => {
+            localDB[targetBid].items.push(localDB[currentBoxId].items[idx]);
+            localDB[currentBoxId].items.splice(idx, 1);
+        });
+
+        const d1 = localDB[currentBoxId];
+        pushData({ action:'save', boxId:currentBoxId, location:d1.loc, items:d1.items, category:d1.category });
+        const d2 = localDB[targetBid];
+        pushData({ action:'save', boxId:targetBid, location:d2.loc, items:d2.items, category:d2.category });
+
+        alert(`${indices.length}個のアイテムを移動しました`);
+        document.getElementById('batch-move-modal').style.display='none';
+        renderBoxUI();
+    }
+
+    function highlightText(text, keyword) {
+        if(!keyword) return text;
+        const parts = text.split(new RegExp(`(${keyword})`, 'gi'));
+        return parts.map(part => part.toLowerCase() === keyword.toLowerCase() ? `<span class="hl">${part}</span>` : part).join('');
+    }
+
+    // --- 総合検索 (キーワードのみ) ---
+    function findSuggestion() {
+        const key = document.getElementById('suggest-input').value.trim().toLowerCase();
+        const res = document.getElementById('suggest-res');
+        res.innerHTML = ""; if(!key) return;
+        let found = false;
+        
+        const terms = key.split(/\s+/).filter(t => t);
+        
+        Object.keys(localDB).forEach(id => {
+            const d = localDB[id]; 
+            const rawTxt = `${id} ${d.loc} ${d.category} ${d.items.map(i=>i.n).join(" ")}`.toLowerCase();
+            
+            if(terms.every(t => rawTxt.includes(t))) {
+                found = true; 
+                const div = document.createElement('div'); div.className = "list-row fade-in-up";
+                let itemsHtml = d.items.map(i => {
+                     let name = i.n; let isMatch = false;
+                     terms.forEach(t => { if(t && name.toLowerCase().includes(t)) { name = highlightText(name, t); isMatch = true; } });
+                     const stBadge = getStatusBadge(i.s || 0);
+                     const finalName = name + " " + stBadge;
+                     return isMatch ? `<span class="item-match" style="color:var(--ios-orange);">${finalName}</span>` : finalName;
+                }).join(", ");
+                div.innerHTML = `
+                    <div class="list-row-content" onclick="jumpToBox('${id}', '${terms[0]}', 'yellow')" style="cursor:pointer;">
+                        <div class="item-title"><span class="jump-link">${highlightText(id, terms[0])}</span> <span class="tag-badge">${getCatIcon(d.category)} ${highlightText(d.category, terms[0])}</span></div>
+                        <div class="item-subtitle">@${highlightText(d.loc, terms[0])}</div>
+                        <div style="font-size:12px; color:var(--ios-text); margin-top:4px;">${itemsHtml}</div>
+                    </div>`;
+                res.appendChild(div);
+            }
+        });
+        
+        if(!found) res.innerHTML = "<div style='text-align:center;color:var(--ios-subtext);padding:10px;' class='fade-in-up'>見つかりませんでした</div>";
+    }
+
+    // --- 収納提案 (進化版) ---
+    function findPlacement() {
+        const key = document.getElementById('placement-input').value.trim().toLowerCase();
+        const res = document.getElementById('placement-res');
+        if(!key) { res.style.display='none'; return; }
+        res.style.display='block';
+        
+        let words = [key]; 
+        let targetCat = "未分類";
+        Object.keys(DICT).forEach(c => { 
+            if(DICT[c].some(w=>key.includes(w) || w.includes(key))) { 
+                words = words.concat(DICT[c]); 
+                targetCat = c; 
+            }
+        });
+        
+        let hits =[];
+        Object.keys(localDB).forEach(id => {
+            const b = localDB[id]; 
+            let score = 0;
+            let exactItemMatch = false;
+            
+            if(b.items.some(i => i.n.toLowerCase().includes(key) || key.includes(i.n.toLowerCase()))) {
+                score += 100;
+                exactItemMatch = true;
+            }
+            
+            if(b.category === targetCat && targetCat !== "未分類") score += 20;
+            
+            const content = b.items.map(i=>i.n.toLowerCase()).join(" ");
+            words.forEach(w => { if(content.includes(w)) score += 5; });
+            
+            score -= (b.items.length * 0.5);
+            
+            if(score > 0) hits.push({id, loc:b.loc, cat:b.category, score, exact: exactItemMatch});
+        });
+        hits.sort((a,b)=>b.score-a.score);
+        
+        let msg = targetCat !== "未分類" ? `推測カテゴリ: <b>${targetCat}</b><br>` : "";
+        if(hits.length > 0) {
+            msg += "<b>おすすめの収納先:</b><br>" + hits.slice(0,4).map(h=>{
+                let exactBadge = h.exact ? `<span class="tag-badge" style="background:var(--ios-orange);color:white;">同種あり</span>` : "";
+                return `・<span class="jump-link" onclick="tab('scan', true);openBox('${h.id}')">${h.id}</span> (${h.cat}) @${h.loc} ${exactBadge}`;
+            }).join("<br>");
+        } else {
+            msg += "新しい箱か、空いている箱を使いましょう。";
+        }
+        res.innerHTML = msg;
+    }
+
+    function renderList() {
+        const cats = {}; let boxCount = 0; let itemCount = 0;
+        Object.keys(localDB).forEach(id => { boxCount++; const c = localDB[id].category || "未分類"; cats[c] = (cats[c]||0)+1; itemCount += localDB[id].items.length; });
+        document.getElementById('total-count').innerText = `${boxCount}箱 / ${itemCount}点`;
+        const bar = document.getElementById('stat-bar'); bar.innerHTML=""; const leg = document.getElementById('stat-legend'); leg.innerHTML="";
+        const colors =["#007AFF","#34C759","#FF9500","#FF3B30","#AF52DE","#5856D6","#FF2D55","#A2845E"]; let ci = 0;
+        Object.keys(cats).sort((a,b)=>cats[b]-cats[a]).forEach(c => {
+            const pct = (cats[c]/boxCount)*100; const col = colors[ci % colors.length];
+            const seg = document.createElement('div'); seg.className='stat-seg'; seg.style.width=pct+"%"; seg.style.background=col; bar.appendChild(seg);
+            const li = document.createElement('div'); li.className='stat-item fade-in-up'; li.innerHTML = `<div class="stat-dot" style="background:${col}"></div> ${c}`; leg.appendChild(li); ci++;
+        });
+        const key = document.getElementById('filter-input').value.trim().toLowerCase(); const c = document.getElementById('list-container'); c.innerHTML="";
+        Object.keys(localDB).forEach(id => {
+            const d = localDB[id]; const txt = `${id} ${d.loc} ${d.category} ${d.items.map(i=>i.n).join(" ")}`.toLowerCase(); const terms = key.split(/\s+/);
+            if(!key || terms.every(t => txt.includes(t))) {
+                const div = document.createElement('div'); div.className = "list-row fade-in-up"; div.style.cursor="pointer";
+                const prev = d.items.slice(0,3).map(i=>i.n).join(", ") + (d.items.length>3?"...":"");
+                div.innerHTML = `
+                    <div class="list-row-content">
+                        <div class="item-title">${id} <span class="tag-badge">${getCatIcon(d.category)} ${d.category}</span></div>
+                        <div class="item-subtitle">@${d.loc}</div>
+                        <div style="font-size:12px; color:var(--ios-text); margin-top:4px;">${prev}</div>
+                    </div>
+                    <div style="color:var(--ios-subtext);"><span class="material-symbols-rounded">chevron_right</span></div>`;
+                div.onclick=()=>{ tab('scan', true); openBox(id); }; c.appendChild(div);
+            }
+        });
+    }
+
+    let aiStream=null, recognition=null, isVoiceOnly=false, lastSpoken="";
+    async function startFastMode(voiceOnly) {
+        isVoiceOnly = voiceOnly; if(!voiceOnly && !aiModel) aiModel = await mobilenet.load();
+        document.getElementById('fast-mode-ui').style.display='flex';
+        const v = document.getElementById('fast-video'); const ico = document.getElementById('voice-icon');
+        if(voiceOnly) { v.style.display='none'; ico.style.display='block'; document.getElementById('fast-log').innerText = "音声入力中..."; } 
+        else { v.style.display='block'; ico.style.display='none'; try { aiStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}}); v.srcObject = aiStream; loopAI(); } catch(e){} }
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if(SR) {
+            recognition = new SR(); recognition.lang = 'ja-JP'; recognition.continuous = true; recognition.interimResults = false;
+            recognition.onend = () => { if(document.getElementById('fast-mode-ui').style.display==='flex') try{recognition.start()}catch(e){} };
+            recognition.onresult = (e) => { handleFastInput(e.results[e.results.length-1][0].transcript.trim(), false); };
+            try{recognition.start()}catch(e){}
+        }
+    }
+    async function loopAI() {
+        if(document.getElementById('fast-mode-ui').style.display==='none' || isVoiceOnly) return;
+        const v = document.getElementById('fast-video');
+        if(v.readyState===4 && Math.random()<0.05) {
+            const p = await aiModel.classify(v); if(p.length>0 && p[0].probability>0.65) { const ja = await translate(p[0].className); handleFastInput(ja, true); }
+        }
+        if(aiStream) requestAnimationFrame(loopAI);
+    }
+    async function translate(t) { try { const r = await fetch(`${GAS_URL}?action=translate&text=${t}&password=${password}`); const j=await r.json(); return j.translated; } catch(e){return t;} }
+    function handleFastInput(t, isAI) {
+        if(t==="終了") { stopFastMode(); return; } if(t===lastSpoken) return; lastSpoken = t;
+        localDB[currentBoxId].items.push({n:t, c:1, t:[], s:0}); document.getElementById('fast-log').innerText = `登録: ${t}`;
+        localDB[currentBoxId].category = autoCategorize(localDB[currentBoxId].items); beep();
+    }
+    function stopFastMode() { if(aiStream) aiStream.getTracks().forEach(t=>t.stop()); if(recognition) recognition.stop(); aiStream=null; recognition=null; document.getElementById('fast-mode-ui').style.display='none'; saveBox(); renderBoxUI(); }
+
+    // --- 印刷機能 (単体) ---
+    function printQR() {
+        const a=document.getElementById('print-area'); 
+        a.style.display='flex'; 
+        a.className='mode-single';
+        a.innerHTML=`<div class="print-card"><div class="print-id">${currentBoxId}</div><div class="print-cat">${getCatIcon(localDB[currentBoxId].category)} ${localDB[currentBoxId].category}</div><div id="pq"></div></div>`;
+        
+        new QRCode(document.getElementById("pq"),{text:currentBoxId,width:128,height:128});
+        
+        setTimeout(()=>{
+            window.print();
+        }, 800);
+    }
+
+    // --- 新規QRの一括印刷 ---
+    function openPrintConfig() {
+        const list = document.getElementById('print-config-list'); list.innerHTML = "";
+        Object.keys(CAT_ICONS).forEach(cat => {
+            const div = document.createElement('div');
+            div.className = "fade-in-up";
+            div.style.display = "flex"; div.style.justifyContent = "space-between"; div.style.alignItems = "center"; div.style.padding = "8px"; div.style.borderBottom = "1px solid var(--ios-border)";
+            div.innerHTML = `<span>${getCatIcon(cat)} ${cat}</span><input type="number" min="0" max="8" value="0" class="print-count-input" data-cat="${cat}" style="width:60px; text-align:center;" onchange="updatePrintTotal()">`;
+            list.appendChild(div);
+        });
+        updatePrintTotal(); document.getElementById('print-config-modal').style.display='flex';
+    }
+
+    function updatePrintTotal() {
+        let total = 0; document.querySelectorAll('.print-count-input').forEach(inp => total += parseInt(inp.value||0));
+        const el = document.getElementById('print-total-count'); el.innerText = `合計: ${total}枚 (残り${8-total}枚)`;
+        el.style.color = total > 8 ? "red" : "black";
+    }
+
+    function execBulkPrint() {
+        let total = 0; const requests =[];
+        document.querySelectorAll('.print-count-input').forEach(inp => {
+            const count = parseInt(inp.value||0);
+            const cat = inp.dataset.cat;
+            for(let i=0; i<count; i++) requests.push(cat);
+            total += count;
+        });
+        if(total > 8) { alert("合計8枚以内にしてください"); return; }
+        if(total === 0) { for(let i=0; i<8; i++) requests.push("未分類"); }
+        while(requests.length < 8) requests.push("未分類");
+
+        document.getElementById('print-config-modal').style.display='none';
+        const a=document.getElementById('print-area'); 
+        a.style.display='grid'; 
+        a.className='mode-bulk'; 
+        a.innerHTML="";
+        
+        requests.forEach((cat, i) => {
+            let id='BOX-'+Math.floor(1000+Math.random()*9000);
+            while(localDB[id]) id='BOX-'+Math.floor(1000+Math.random()*9000);
+            
+            localDB[id] = { loc:"", items:[], category:cat, updated: new Date() };
+            
+            const d=document.createElement('div'); d.className='print-card';
+            d.innerHTML=`<div class="print-id">${id}</div><div class="print-cat">${getCatIcon(cat)} ${cat}</div><div id="pq${i}"></div>`;
+            a.appendChild(d);
+            new QRCode(document.getElementById(`pq${i}`),{text:id,width:128,height:128});
+            
+            pushData({ action:'save', boxId:id, location:"", items:[], category:cat });
+        });
+        
+        setTimeout(()=>{
+            window.print();
+        }, 1500);
+    }
+
+    // --- 既存QRの一括印刷 ---
+    function openExistingPrintConfig() {
+        const list = document.getElementById('existing-print-list');
+        list.innerHTML = "";
+        Object.keys(localDB).forEach(bid => {
+            const b = localDB[bid];
+            const div = document.createElement('div');
+            div.className = "fade-in-up";
+            div.style.padding="8px"; div.style.borderBottom="1px solid var(--ios-border)";
+            div.innerHTML = `<label style="display:flex;align-items:center;gap:10px;">
+                <input type="checkbox" value="${bid}" class="existing-print-check" style="width:20px;height:20px;margin:0;" onchange="updateExistingPrintCount()"> 
+                <div><b>${bid}</b> <span style="font-size:12px;color:var(--ios-subtext);">${b.category} @${b.loc}</span></div>
+            </label>`;
+            list.appendChild(div);
+        });
+        updateExistingPrintCount();
+        document.getElementById('existing-print-modal').style.display='flex';
+    }
+
+    function toggleAllExistingPrintCheck() {
+        const checks = document.querySelectorAll('.existing-print-check');
+        const allChecked = Array.from(checks).every(c => c.checked);
+        checks.forEach(c => c.checked = !allChecked);
+        updateExistingPrintCount();
+    }
+
+    function updateExistingPrintCount() {
+        const checks = document.querySelectorAll('.existing-print-check:checked');
+        document.getElementById('existing-print-count').innerText = `選択中: ${checks.length}個`;
+    }
+
+    function execExistingBulkPrint() {
+        const checks = document.querySelectorAll('.existing-print-check:checked');
+        if (checks.length === 0) { alert("箱を選択してください"); return; }
+        
+        document.getElementById('existing-print-modal').style.display='none';
+        const a = document.getElementById('print-area'); 
+        a.style.display = 'grid'; 
+        a.className = 'mode-bulk'; 
+        a.innerHTML = "";
+        
+        Array.from(checks).forEach((c, i) => {
+            const bid = c.value;
+            const b = localDB[bid];
+            const d = document.createElement('div'); d.className = 'print-card';
+            d.innerHTML = `<div class="print-id">${bid}</div><div class="print-cat">${getCatIcon(b.category)} ${b.category}</div><div id="pq-ex${i}"></div>`;
+            a.appendChild(d);
+            new QRCode(document.getElementById(`pq-ex${i}`), {text:bid, width:128, height:128});
+        });
+        
+        setTimeout(() => {
+            window.print();
+        }, 1500);
+    }
+
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+            navigator.serviceWorker.register('./sw.js').then(function(registration) {
+                console.log('ServiceWorker registration successful with scope: ', registration.scope);
+            }, function(err) {
+                console.log('ServiceWorker registration failed: ', err);
+            });
+        });
+    }
+</script>
+<!-- Code injected by live-server -->
+<script>
+	// <![CDATA[  <-- For SVG support
+	if ('WebSocket' in window) {
+		(function () {
+			function refreshCSS() {
+				var sheets = [].slice.call(document.getElementsByTagName("link"));
+				var head = document.getElementsByTagName("head")[0];
+				for (var i = 0; i < sheets.length; ++i) {
+					var elem = sheets[i];
+					var parent = elem.parentElement || head;
+					parent.removeChild(elem);
+					var rel = elem.rel;
+					if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {
+						var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');
+						elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());
+					}
+					parent.appendChild(elem);
+				}
+			}
+			var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';
+			var address = protocol + window.location.host + window.location.pathname + '/ws';
+			var socket = new WebSocket(address);
+			socket.onmessage = function (msg) {
+				if (msg.data == 'reload') window.location.reload();
+				else if (msg.data == 'refreshcss') refreshCSS();
+			};
+			if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer')) {
+				console.log('Live reload enabled.');
+				sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);
+			}
+		})();
+	}
+	else {
+		console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');
+	}
+	// ]]>
+</script>
+</body>
+</html>
