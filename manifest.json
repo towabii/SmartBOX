@@ -1,8 +1,8 @@
 {
   "name": "SmartBOX",
   "short_name": "SmartBOX",
-  "start_url": "/",
-  "scope": "/",
+  "start_url": "https://towabii.github.io/smartbox/",
+  "scope": "/smartbox/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#0F172A",
@@ -10,13 +10,13 @@
   "description": "SmartBOX Web Application",
   "icons": [
     {
-      "src": "/smartbox.jpeg",
+      "src": "smartbox.jpeg",
       "sizes": "192x192",
       "type": "image/jpeg",
       "purpose": "any maskable"
     },
     {
-      "src": "/smartbox.jpeg",
+      "src": "smartbox.jpeg",
       "sizes": "512x512",
       "type": "image/jpeg",
       "purpose": "any maskable"
