@@ -1,20 +1,21 @@
 {
-  "name": "SmartBOX",
-  "short_name": "SmartBOX",
-  "start_url": "https://towabii.github.io/smartbox/",
-  "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#ffffff",
-  "icons": [
-    {
-      "src": "smartbox.jpeg",
-      "sizes": "192x192",
-      "type": "image/jpeg"
-    },
-    {
-      "src": "smartbox.jpeg",
-      "sizes": "512x512",
-      "type": "image/jpeg"
-    }
-  ]
+    "name": "SmartBOX",
+    "short_name": "SmartBOX",
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#f4f7f6",
+    "theme_color": "#2c3e50",
+    "description": "A simple wallet application.",
+    "icons": [
+        {
+            "src": "smartbox.jpeg",
+            "sizes": "192x192",
+            "type": "smartbox.jpeg"
+        },
+        {
+            "src": "smartbox.jpeg",
+            "sizes": "512x512",
+            "type": "smartbox.jpeg"
+        }
+    ]
 }
