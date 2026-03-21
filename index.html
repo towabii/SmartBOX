@@ -156,6 +156,24 @@
         .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
         .btn-sm { padding: 8px; font-size: 14px; width: auto; border-radius: 8px; }
 
+        /* ドロップダウンメニュー（ハンバーガー） */
+        .dropdown { position: relative; display: inline-block; }
+        .dropdown-content {
+            display: none; position: absolute; right: 0; top: 100%; background-color: var(--ios-card);
+            min-width: 150px; box-shadow: 0 4px 16px rgba(0,0,0,0.2); z-index: 100;
+            border-radius: 12px; overflow: hidden; border: 0.5px solid var(--ios-border);
+            flex-direction: column; margin-top: 4px;
+        }
+        .dropdown-content.show { display: flex; animation: fadeInUp 0.2s ease-out; }
+        .dropdown-item {
+            padding: 12px 16px; display: flex; align-items: center; gap: 8px;
+            color: var(--ios-text); font-size: 14px; cursor: pointer; border-bottom: 0.5px solid var(--ios-border);
+            transition: background-color 0.2s; white-space: nowrap;
+        }
+        .dropdown-item:last-child { border-bottom: none; }
+        .dropdown-item:active { background-color: var(--ios-input-bg); }
+        .dropdown-item.danger { color: var(--ios-red); }
+
         /* ナビバー */
         .nav-bar {
             position: fixed; bottom: 0; left: 0; width: 100%;
@@ -350,6 +368,14 @@
                 <div id="reader"></div>
                 <div style="padding: 16px; text-align: center; color: var(--ios-subtext); font-size: 13px;">
                     ※カメラへのアクセスを許可してください
+                </div>
+            </div>
+            
+            <div class="ios-card" style="margin-top: 16px; padding: 16px;">
+                <label style="font-size: 12px; font-weight: 600; color: var(--ios-subtext); display: block; margin-bottom: 8px;">文字スキャン / 手動入力で開く</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="manual-box-id" placeholder="BOX-XXXX (テキスト認識対応)" style="flex: 1;">
+                    <button class="btn-secondary" style="width: auto; padding: 0 20px;" onclick="openBoxManual()">開く</button>
                 </div>
             </div>
         </div>
@@ -653,7 +679,8 @@
 <div id="print-area"></div>
 
 <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbydf1nPxbkN6jc82UgwBVF8WSE85ZMnmVUFjpKeE8RpPHpo0nluGnzo3LSLkbime9BDew/exec";
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbwGl8GmRqkFsWYAAV7NichWK9LXP0oQ7mP8WxgpAmlqkVEjJLOg3TwhMkhNkJcG1YTS4A/exec";
+    const APP_URL = "https://towabii.github.io/smartbox/";
 
     let localDB = {}; 
     let currentBoxId = null;
@@ -661,9 +688,10 @@
     let aiModel = null;
     let password = localStorage.getItem('sb_pass') || "";
     let moveTargetIdx = null;
+    let pendingBoxParam = null;
     
     let targetHighlightItems =[]; 
-    let targetHighlightColor = ""; // 'yellow' or 'blue'
+    let targetHighlightColor = ""; 
     
     let audioCtx = null;
 
@@ -694,7 +722,15 @@
         gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
         osc.start(); osc.stop(audioCtx.currentTime + 0.1);
     }
-    document.addEventListener('click', (e) => { if(e.target.tagName === 'BUTTON' || e.target.closest('button')) beep(); });
+    
+    // グローバルクリックイベント（効果音とドロップダウンメニューの非表示処理）
+    document.addEventListener('click', (e) => { 
+        if(e.target.tagName === 'BUTTON' || e.target.closest('button')) beep(); 
+        
+        if(!e.target.closest('.dropdown')) {
+            document.querySelectorAll('.dropdown-content.show').forEach(el => el.classList.remove('show'));
+        }
+    });
 
     const DICT = {
         "PC・ガジェット":["PC","パソコン","マウス","キーボード","モニター","ケーブル","USB","充電器","スマホ","電池","イヤホン","HDD","SSD","SD","マイク","ルーター","タブレット","iPad","Apple", "アダプタ", "コード", "バッテリー", "カメラ"],
@@ -713,7 +749,15 @@
         initAudio();
         if(localStorage.getItem('sb_dark')==='1') document.body.classList.add('dark-mode');
         updateThemeLabel();
-        if(password) { document.getElementById('login-overlay').style.display='none'; fetchData(); }
+        
+        // URLパラメータの取得
+        const urlParams = new URLSearchParams(window.location.search);
+        pendingBoxParam = urlParams.get('box');
+        
+        if(password) { 
+            document.getElementById('login-overlay').style.display='none'; 
+            fetchData(); 
+        }
         renderList(); 
         document.getElementById('inp-name').addEventListener('input', checkInputDuplicate);
         
@@ -752,7 +796,9 @@
                 password = p; localStorage.setItem('sb_pass', p);
                 document.getElementById('login-overlay').style.opacity = 0;
                 setTimeout(()=>document.getElementById('login-overlay').style.display='none', 300);
-                localDB = d; renderList();
+                localDB = d; 
+                if(pendingBoxParam) handlePendingBox();
+                else renderList();
             }
         }).catch(e => document.getElementById('login-msg').innerText = "通信エラー");
     }
@@ -764,9 +810,25 @@
             const res = await fetch(`${GAS_URL}?password=${password}`); const json = await res.json();
             if(json.error) { alert("認証エラー"); logout(); return; }
             localDB = json; document.getElementById('sync-status').innerText = "Ready";
-            if(force) { alert("同期完了"); renderList(); }
+            
+            if(pendingBoxParam) {
+                handlePendingBox();
+            } else if(force) { 
+                alert("同期完了"); renderList(); 
+            } else {
+                renderList();
+            }
         } catch(e){ document.getElementById('sync-status').innerText = "Error"; }
     }
+    
+    function handlePendingBox() {
+        const b = pendingBoxParam;
+        pendingBoxParam = null;
+        window.history.replaceState({}, document.title, window.location.pathname);
+        tab('scan', true);
+        openBox(b);
+    }
+    
     async function pushData(payload) {
         document.getElementById('sync-status').innerText = "Saving..."; payload.password = password;
         try { await fetch(GAS_URL, { method:'POST', headers:{ "Content-Type":"text/plain" }, body:JSON.stringify(payload) }); document.getElementById('sync-status').innerText = "Saved"; } catch(e){ document.getElementById('sync-status').innerText = "Save Error"; }
@@ -794,16 +856,44 @@
     }
 
     function forceStartQR() { document.getElementById('pc-camera-trigger').style.display = 'none'; document.getElementById('reader').classList.add('active'); startQR(); }
+    
     function startQR() {
         if(currentBoxId || qrScanner) return;
         const r = document.getElementById("reader");
         if(r && r.offsetParent!==null) {
             const sc = new Html5Qrcode("reader");
-            sc.start({facingMode:"environment"},{fps:10,qrbox:250},(t)=>{ beep(); openBox(t); })
+            sc.start({facingMode:"environment"},{fps:10,qrbox:250},(t)=>{ 
+                beep(); 
+                handleScan(t); 
+            })
             .then(()=>{qrScanner=sc}).catch(()=>{ if(window.innerWidth<768) setTimeout(startQR,500); });
         }
     }
+    
     function stopQR() { if(qrScanner) qrScanner.stop().then(()=>{qrScanner.clear();qrScanner=null}).catch(()=>{qrScanner=null}); }
+
+    // スキャンされたテキスト(URL)の処理
+    function handleScan(t) {
+        let id = t;
+        try {
+            let url = new URL(t);
+            if(url.searchParams.has('box')) id = url.searchParams.get('box');
+        } catch(e) {
+            const match = t.match(/BOX-\d+/);
+            if(match) id = match[0];
+        }
+        openBox(id);
+    }
+    
+    // 手動入力・テキスト認識
+    function openBoxManual() {
+        let id = document.getElementById('manual-box-id').value.trim().toUpperCase();
+        if(id) {
+            if(!id.startsWith('BOX-')) id = 'BOX-' + id.replace(/[^0-9A-Z]/g, '');
+            document.getElementById('manual-box-id').value = "";
+            openBox(id);
+        }
+    }
 
     function openBox(id) {
         stopQR(); currentBoxId = id;
@@ -811,6 +901,7 @@
         if(!localDB[id]) localDB[id] = { loc:"", items:[], category:"未分類", updated: new Date() };
         renderBoxUI();
     }
+    
     function closeBox() { 
         currentBoxId=null; targetHighlightItems=[]; targetHighlightColor="";
         document.getElementById('box-ui').style.display='none'; document.getElementById('scan-ui').style.display='block'; 
@@ -822,6 +913,15 @@
         targetHighlightColor = color;
         tab('scan', true); 
         openBox(boxId);
+    }
+
+    // ハンバーガーメニュー切り替え
+    function toggleMenu(e, i) {
+        e.stopPropagation(); // グローバルクリックでの即時閉じを防止
+        document.querySelectorAll('.dropdown-content.show').forEach(el => {
+            if(el.id !== `menu-${i}`) el.classList.remove('show');
+        });
+        document.getElementById(`menu-${i}`).classList.toggle('show');
     }
 
     function renderBoxUI() {
@@ -846,10 +946,7 @@
             if(st === 1 || st === 2) {
                 stAction = `<button class="btn-secondary btn-sm" onclick="toggleStatus(${i}, 0)" title="通常に戻す"><span class="material-symbols-rounded">undo</span></button>`;
             } else {
-                stAction = `
-                    <button class="btn-secondary btn-sm" onclick="toggleStatus(${i}, 1)" title="使用中"><span class="material-symbols-rounded">front_hand</span></button>
-                    <button class="btn-secondary btn-sm" onclick="toggleStatus(${i}, 2)" title="行方不明"><span class="material-symbols-rounded">question_mark</span></button>
-                `;
+                stAction = `<button class="btn-secondary btn-sm" onclick="toggleStatus(${i}, 1)" title="使用中"><span class="material-symbols-rounded">front_hand</span></button>`;
             }
 
             const shouldHighlight = targetHighlightItems.some(hi => item.n.toLowerCase().includes(hi.toLowerCase()));
@@ -866,10 +963,22 @@
                 <div class="list-row-content">
                     <div class="item-title">${item.n} ${tags} ${stBadge}</div>
                 </div>
-                <div style="display: flex; gap: 4px; flex-wrap: wrap; align-items: center; justify-content: flex-end;">
+                <div style="display: flex; gap: 4px; flex-wrap: wrap; align-items: center; justify-content: flex-end; position:relative;">
                     ${stAction}
                     <button class="btn-secondary btn-sm" onclick="openMoveModal(${i})" title="移動"><span class="material-symbols-rounded">local_shipping</span></button>
-                    <button class="btn-danger btn-sm" onclick="delItem(${i})" title="削除"><span class="material-symbols-rounded">delete</span></button>
+                    <button class="btn-secondary btn-sm" onclick="editItem(${i})" title="編集"><span class="material-symbols-rounded">edit</span></button>
+                    <div class="dropdown">
+                        <button class="btn-secondary btn-sm" onclick="toggleMenu(event, ${i})" title="メニュー"><span class="material-symbols-rounded">more_vert</span></button>
+                        <div id="menu-${i}" class="dropdown-content">
+                            <div class="dropdown-item" onclick="toggleStatus(${i}, ${st === 2 ? 0 : 2})">
+                                <span class="material-symbols-rounded" style="font-size:18px;">${st === 2 ? 'undo' : 'question_mark'}</span>
+                                ${st === 2 ? '見つかった' : '行方不明'}
+                            </div>
+                            <div class="dropdown-item danger" onclick="delItem(${i})">
+                                <span class="material-symbols-rounded" style="font-size:18px;">delete</span> 削除する
+                            </div>
+                        </div>
+                    </div>
                 </div>`;
             list.appendChild(row);
         });
@@ -879,6 +988,16 @@
         localDB[currentBoxId].items[i].s = status;
         saveBox();
         renderBoxUI();
+    }
+    
+    function editItem(i) {
+        const itm = localDB[currentBoxId].items[i];
+        const newName = prompt("アイテム名を変更", itm.n);
+        if(newName !== null && newName.trim() !== "") {
+            itm.n = newName.trim();
+            saveBox();
+            renderBoxUI();
+        }
     }
 
     function checkExistingDuplicates(items) {
@@ -954,6 +1073,7 @@
         document.getElementById('inp-name').value = ""; document.getElementById('input-dup-alert').classList.remove('show');
         localDB[currentBoxId].category = autoCategorize(localDB[currentBoxId].items); saveBox(); renderBoxUI();
     }
+    
     function delItem(i) { if(confirm("削除しますか？")) { localDB[currentBoxId].items.splice(i, 1); saveBox(); renderBoxUI(); } }
     async function deleteBox() { if(!confirm("箱ごと削除しますか？")) return; delete localDB[currentBoxId]; await pushData({ action:'delete', boxId:currentBoxId }); alert("削除しました"); closeBox(); }
     function saveBox() {
@@ -1188,21 +1308,22 @@
     }
     function stopFastMode() { if(aiStream) aiStream.getTracks().forEach(t=>t.stop()); if(recognition) recognition.stop(); aiStream=null; recognition=null; document.getElementById('fast-mode-ui').style.display='none'; saveBox(); renderBoxUI(); }
 
-    // --- 印刷機能 (単体) ---
+    // --- 印刷機能 ---
+    function getQRText(boxId) { return `${APP_URL}?box=${boxId}`; }
+
+    // (単体印刷)
     function printQR() {
         const a=document.getElementById('print-area'); 
         a.style.display='flex'; 
         a.className='mode-single';
         a.innerHTML=`<div class="print-card"><div class="print-id">${currentBoxId}</div><div class="print-cat">${getCatIcon(localDB[currentBoxId].category)} ${localDB[currentBoxId].category}</div><div id="pq"></div></div>`;
         
-        new QRCode(document.getElementById("pq"),{text:currentBoxId,width:128,height:128});
+        new QRCode(document.getElementById("pq"),{text:getQRText(currentBoxId),width:128,height:128});
         
-        setTimeout(()=>{
-            window.print();
-        }, 800);
+        setTimeout(()=>{ window.print(); }, 800);
     }
 
-    // --- 新規QRの一括印刷 ---
+    // (新規一括)
     function openPrintConfig() {
         const list = document.getElementById('print-config-list'); list.innerHTML = "";
         Object.keys(CAT_ICONS).forEach(cat => {
@@ -1248,17 +1369,15 @@
             const d=document.createElement('div'); d.className='print-card';
             d.innerHTML=`<div class="print-id">${id}</div><div class="print-cat">${getCatIcon(cat)} ${cat}</div><div id="pq${i}"></div>`;
             a.appendChild(d);
-            new QRCode(document.getElementById(`pq${i}`),{text:id,width:128,height:128});
+            new QRCode(document.getElementById(`pq${i}`),{text:getQRText(id),width:128,height:128});
             
             pushData({ action:'save', boxId:id, location:"", items:[], category:cat });
         });
         
-        setTimeout(()=>{
-            window.print();
-        }, 1500);
+        setTimeout(()=>{ window.print(); }, 1500);
     }
 
-    // --- 既存QRの一括印刷 ---
+    // (既存一括)
     function openExistingPrintConfig() {
         const list = document.getElementById('existing-print-list');
         list.innerHTML = "";
@@ -1305,61 +1424,19 @@
             const d = document.createElement('div'); d.className = 'print-card';
             d.innerHTML = `<div class="print-id">${bid}</div><div class="print-cat">${getCatIcon(b.category)} ${b.category}</div><div id="pq-ex${i}"></div>`;
             a.appendChild(d);
-            new QRCode(document.getElementById(`pq-ex${i}`), {text:bid, width:128, height:128});
+            new QRCode(document.getElementById(`pq-ex${i}`), {text:getQRText(bid), width:128, height:128});
         });
         
-        setTimeout(() => {
-            window.print();
-        }, 1500);
+        setTimeout(() => { window.print(); }, 1500);
     }
 
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', function() {
             navigator.serviceWorker.register('./sw.js').then(function(registration) {
-                console.log('ServiceWorker registration successful with scope: ', registration.scope);
-            }, function(err) {
-                console.log('ServiceWorker registration failed: ', err);
-            });
+                console.log('ServiceWorker registration successful');
+            }).catch(function(err) {});
         });
     }
-</script>
-<!-- Code injected by live-server -->
-<script>
-	// <![CDATA[  <-- For SVG support
-	if ('WebSocket' in window) {
-		(function () {
-			function refreshCSS() {
-				var sheets = [].slice.call(document.getElementsByTagName("link"));
-				var head = document.getElementsByTagName("head")[0];
-				for (var i = 0; i < sheets.length; ++i) {
-					var elem = sheets[i];
-					var parent = elem.parentElement || head;
-					parent.removeChild(elem);
-					var rel = elem.rel;
-					if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {
-						var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');
-						elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());
-					}
-					parent.appendChild(elem);
-				}
-			}
-			var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';
-			var address = protocol + window.location.host + window.location.pathname + '/ws';
-			var socket = new WebSocket(address);
-			socket.onmessage = function (msg) {
-				if (msg.data == 'reload') window.location.reload();
-				else if (msg.data == 'refreshcss') refreshCSS();
-			};
-			if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer')) {
-				console.log('Live reload enabled.');
-				sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);
-			}
-		})();
-	}
-	else {
-		console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');
-	}
-	// ]]>
 </script>
 </body>
 </html>
