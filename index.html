@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Smart Box V19 Ultimate</title>
+    <title>Smart Box</title>
     
     <!-- PWA Settings Start -->
     <link rel="manifest" href="manifest.json">
@@ -71,20 +71,12 @@
             transition: background-color 0.3s, color 0.3s;
         }
 
-        /* アイコン */
-        .material-symbols-rounded {
-            font-size: 24px; vertical-align: middle; user-select: none;
-        }
+        .material-symbols-rounded { font-size: 24px; vertical-align: middle; user-select: none; }
         .icon-lg { font-size: 48px; }
-        /* カテゴリアイコン用のスタイル */
-        .cat-icon {
-            font-size: 1.2em; vertical-align: -3px; margin-right: 4px;
-        }
+        .cat-icon { font-size: 1.2em; vertical-align: -3px; margin-right: 4px; }
 
-        /* レイアウト */
         .container { max-width: 600px; margin: 0 auto; padding: 16px; }
 
-        /* ヘッダー */
         .header {
             position: sticky; top: 0; z-index: 90;
             background: var(--ios-bg); padding: 12px 16px;
@@ -97,20 +89,20 @@
             background: var(--btn-sec-bg); padding: 4px 8px; border-radius: 12px; font-weight: 600;
         }
 
-        /* カード */
         .ios-group { margin-bottom: 24px; }
         .ios-group-title {
             text-transform: uppercase; font-size: 13px; color: var(--ios-subtext);
             margin: 0 0 8px 16px; font-weight: normal;
         }
         .ios-card {
-            background: var(--ios-card); border-radius: 12px; overflow: hidden;
+            background: var(--ios-card); border-radius: 12px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.05);
             transition: box-shadow 0.3s;
         }
-        .ios-card-content { padding: 16px; }
+        .ios-card > .list-row:first-child { border-top-left-radius: 12px; border-top-right-radius: 12px; }
+        .ios-card > .list-row:last-child { border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; }
+        .ios-card-content { padding: 16px; border-radius: 12px; overflow: hidden; }
 
-        /* フォーム */
         input[type="text"], input[type="number"], input[type="password"], select {
             width: 100%; box-sizing: border-box; background: var(--ios-input-bg);
             border: none; padding: 12px 16px; border-radius: 10px;
@@ -119,7 +111,6 @@
         }
         input:focus { outline: 2px solid var(--ios-blue); }
 
-        /* ボタン */
         button {
             border: none; cursor: pointer; font-family: inherit; font-size: 17px; font-weight: 600;
             border-radius: 12px; padding: 14px; width: 100%;
@@ -127,14 +118,12 @@
             transition: opacity 0.2s, transform 0.1s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s;
         }
         button:active { opacity: 0.7; transform: scale(0.95); }
-
         .btn-primary { background: var(--btn-primary-bg); color: var(--btn-primary-text); }
         .btn-secondary { background: var(--btn-sec-bg); color: var(--btn-sec-text); }
         .btn-danger { background: rgba(255, 59, 48, 0.15); color: var(--ios-red); }
         .btn-success { background: var(--btn-primary-bg); color: var(--btn-primary-text); }
         .btn-warning { background: var(--ios-orange); color: white; }
 
-        /* リスト */
         .list-row {
             display: flex; align-items: center; justify-content: space-between;
             padding: 12px 16px; background: var(--ios-card); 
@@ -153,14 +142,15 @@
             font-size: 11px; padding: 2px 6px; border-radius: 4px; margin-left: 4px;
         }
 
-        .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+        .btn-group { display: flex; gap: 12px; margin-top: 12px; }
+        .btn-group button { flex: 1; }
         .btn-sm { padding: 8px; font-size: 14px; width: auto; border-radius: 8px; }
 
-        /* ドロップダウンメニュー（ハンバーガー） */
+        /* ハンバーガーメニュー */
         .dropdown { position: relative; display: inline-block; }
         .dropdown-content {
             display: none; position: absolute; right: 0; top: 100%; background-color: var(--ios-card);
-            min-width: 150px; box-shadow: 0 4px 16px rgba(0,0,0,0.2); z-index: 100;
+            min-width: 150px; box-shadow: 0 4px 16px rgba(0,0,0,0.2); z-index: 9999;
             border-radius: 12px; overflow: hidden; border: 0.5px solid var(--ios-border);
             flex-direction: column; margin-top: 4px;
         }
@@ -174,31 +164,28 @@
         .dropdown-item:active { background-color: var(--ios-input-bg); }
         .dropdown-item.danger { color: var(--ios-red); }
 
-        /* ナビバー */
         .nav-bar {
             position: fixed; bottom: 0; left: 0; width: 100%;
             background: var(--ios-card); border-top: 0.5px solid var(--ios-border);
             display: flex; justify-content: space-around;
-            padding-bottom: var(--safe-area-bottom); z-index: 1000;
+            padding-bottom: var(--safe-area-bottom); z-index: 10000;
         }
         .nav-item { 
             flex: 1; padding: 8px 0; text-align: center; font-size: 10px; color: var(--ios-subtext); 
             cursor: pointer; display:flex; flex-direction:column; align-items:center; justify-content:center;
-            user-select: none; -webkit-user-select: none;
-            transition: color 0.2s;
+            user-select: none; -webkit-user-select: none; transition: color 0.2s;
         }
         .nav-item.active { color: var(--ios-text); font-weight: bold; }
         .nav-item .material-symbols-rounded { font-size: 26px; margin-bottom: 2px; }
 
-        /* PCレイアウト */
         @media (min-width: 768px) {
-            body { padding-bottom: 0; padding-left: 240px; background-color: var(--ios-bg); }
+            body { padding-bottom: 0; padding-left: 240px; }
             .container { max-width: 800px; padding: 40px; }
             .nav-bar {
                 top: 0; left: 0; width: 240px; height: 100vh;
                 flex-direction: column; justify-content: flex-start;
                 border-top: none; border-right: 1px solid var(--ios-border);
-                padding-top: 40px; padding-bottom: 0; background: var(--ios-card);
+                padding-top: 40px; padding-bottom: 0;
             }
             .nav-item {
                 flex: 0; flex-direction: row; gap: 16px;
@@ -214,129 +201,91 @@
             #reader.active { display: block; }
         }
 
-        /* ログイン */
         #login-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--ios-bg); z-index: 9999;
+            background: var(--ios-bg); z-index: 99999;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
         }
         #login-overlay input { text-align: center; letter-spacing: 0.5em; font-size: 24px; max-width: 200px; margin: 24px 0; background: var(--ios-card); }
 
-        /* モーダル */
         .modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.4); z-index: 2000;
+            background: rgba(0,0,0,0.4); z-index: 20000;
             display: none; justify-content: center; align-items: flex-end;
-            backdrop-filter: blur(2px);
-            transition: opacity 0.3s ease;
+            backdrop-filter: blur(2px); transition: opacity 0.3s ease;
         }
         .modal-content {
             background: var(--ios-card); width: 100%; max-width: 600px;
             border-radius: 20px 20px 0 0; padding: 24px;
             box-shadow: 0 -4px 20px rgba(0,0,0,0.3); 
             animation: slideUpModal 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            max-height: 85vh; overflow-y: auto;
+            max-height: 85vh; overflow-y: auto; overflow-x: hidden;
         }
         @media (min-width: 768px) { .modal { align-items: center; } .modal-content { border-radius: 20px; } }
         @keyframes slideUpModal { from{transform:translateY(100%); opacity:0;} to{transform:translateY(0); opacity:1;} }
 
-        #reader { width: 100%; border-radius: 16px; overflow: hidden; background: #000; min-height: 300px; }
+        #reader { width: 100%; border-radius: 12px; overflow: hidden; background: #000; min-height: 300px; }
         #reader video { object-fit: cover; }
+        #cam-ui { border-radius: 12px; overflow: hidden; }
         
         .alert-box { background: var(--ios-card); border: 1px solid var(--ios-border); color: var(--ios-text); padding: 12px; border-radius: 10px; font-size: 14px; margin-bottom: 12px; display: none; animation: fadeInUp 0.3s ease-out; }
         .alert-box.show { display: block; }
-        
         .jump-link { font-weight: bold; text-decoration: underline; cursor: pointer; color: var(--ios-blue); }
         .jump-link:active { opacity: 0.6; }
-
-        /* 検索ハイライト用 */
         .hl { background: #FFD60A; color: black; border-radius: 2px; padding: 0 2px; font-weight: bold; }
         
-        .highlight-yellow { 
-            background-color: #FFF9C4 !important; 
-            border-left: 4px solid #FBC02D !important; 
-            transition: background-color 0.5s;
-        }
-        .highlight-blue { 
-            background-color: #E3F2FD !important; 
-            border-left: 4px solid #2196F3 !important; 
-            transition: background-color 0.5s;
-        }
-        
-        body.dark-mode .highlight-yellow {
-            background-color: #3f3b1b !important;
-            border-left: 4px solid #FFD60A !important;
-        }
-        body.dark-mode .highlight-blue {
-            background-color: #1a2f42 !important;
-            border-left: 4px solid #0A84FF !important;
-        }
+        .highlight-yellow { background-color: #FFF9C4 !important; border-left: 4px solid #FBC02D !important; transition: background-color 0.5s; }
+        .highlight-blue { background-color: #E3F2FD !important; border-left: 4px solid #2196F3 !important; transition: background-color 0.5s; }
+        body.dark-mode .highlight-yellow { background-color: #3f3b1b !important; border-left: 4px solid #FFD60A !important; }
+        body.dark-mode .highlight-blue { background-color: #1a2f42 !important; border-left: 4px solid #0A84FF !important; }
 
-        /* ビューアニメーション */
         .view { display: none; }
         .view.active { display: block; animation: fadeInUp 0.3s ease-out; }
-        
         @keyframes fadeInUp { from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
         .fade-in-up { animation: fadeInUp 0.3s ease-out backwards; }
 
-        #pc-camera-trigger {
-            display: none; flex-direction: column; align-items: center; justify-content: center;
-            height: 300px; background: var(--btn-sec-bg); border-radius: 16px; color: var(--ios-text); cursor: pointer;
-        }
+        #pc-camera-trigger { display: none; flex-direction: column; align-items: center; justify-content: center; height: 300px; background: var(--btn-sec-bg); border-radius: 16px; color: var(--ios-text); cursor: pointer; }
         #pc-camera-trigger:hover { opacity: 0.8; }
 
-        /* 統計バー */
         .stat-bar { height: 8px; border-radius: 4px; display: flex; overflow: hidden; margin-top: 10px; }
         .stat-seg { height: 100%; transition: width 0.5s ease; }
         .stat-legend { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; font-size: 12px; color: var(--ios-subtext); }
         .stat-item { display: flex; align-items: center; gap: 4px; }
         .stat-dot { width: 8px; height: 8px; border-radius: 50%; }
 
+        /* エディタ用スタイル */
+        .le-item { position: absolute; border: 1px dashed transparent; cursor: move; box-sizing: border-box; }
+        .le-item.selected { border: 2px dashed var(--ios-blue); z-index: 10; }
+        .le-content { width: 100%; height: 100%; display: flex; align-items: center; overflow: hidden; pointer-events: none; }
+        .le-resize { position: absolute; right: -6px; bottom: -6px; width: 14px; height: 14px; background: var(--ios-blue); border-radius: 50%; cursor: se-resize; display: none; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+        .le-item.selected .le-resize { display: block; }
+        
+        /* 白文字問題の解決：プレビューキャンバス上のテキストは強制的に黒色にする */
+        #le-id .le-content, #le-cat .le-content { color: black !important; }
+        #le-id .le-content { font-weight: 900; }
+        #le-cat .le-content { font-weight: bold; border: 1px solid #333; border-radius: 20px; }
+
         /* 印刷設定 */
         #print-area { display: none; }
         @media print {
-            @page { size: A4; margin: 0; }
+            @page { size: A4 portrait; margin: 0; }
             body > *:not(#print-area) { display: none !important; }
             
             #print-area { 
-                display: flex !important;
+                display: flex !important; flex-wrap: wrap !important; gap: 4mm;
                 position: absolute; top: 0; left: 0; width: 210mm; min-height: 297mm;
                 background: white; color: black; font-family: sans-serif;
-                visibility: visible !important;
+                visibility: visible !important; padding: 5mm; box-sizing: border-box;
+                align-content: flex-start; justify-content: center;
             }
-            #print-area * { visibility: visible; }
-            
-            .print-card {
-                border: 2px dashed #333; 
-                display: flex; flex-direction: column; align-items: center; justify-content: center;
-                border-radius: 8px; box-sizing: border-box; padding: 5px; overflow: hidden;
-                page-break-inside: avoid;
-                break-inside: avoid;
-            }
-            .print-id { font-size: 20pt; font-weight: 900; margin-bottom: 5px; }
-            .print-cat { font-size: 12pt; margin-bottom: 5px; font-weight: bold; border: 1px solid #333; padding: 2px 10px; border-radius: 20px; display: flex; align-items: center; gap: 5px; }
-            .print-cat .material-symbols-rounded { font-size: 1.2em; }
-
-            #print-area.mode-bulk {
-                display: grid !important; 
-                grid-template-columns: 1fr 1fr; 
-                grid-auto-rows: max-content; 
-                padding: 10mm; box-sizing: border-box; 
-                gap: 5mm; 
-            }
-            .mode-bulk .print-card { width: 92.5mm; height: 65.5mm; }
-            
-            #print-area.mode-single {
-                display: flex !important; align-items: center; justify-content: center;
-                width: 210mm; height: 297mm;
-            }
-            .mode-single .print-card { width: 92.5mm; height: 65.5mm; }
+            #print-area * { visibility: visible; color: black !important; }
+            .qr-container img, .qr-container canvas { width: 100% !important; height: 100% !important; object-fit: contain; }
         }
     </style>
 </head>
 <body>
 
-<!-- ログイン画面 -->
+<!-- ログイン -->
 <div id="login-overlay">
     <span class="material-symbols-rounded icon-lg" style="margin-bottom:10px;">inventory_2</span>
     <h2 style="margin: 0; font-weight: 700;">Smart Box</h2>
@@ -356,7 +305,7 @@
 
 <div class="container">
 
-    <!-- 1. 編集 (Scan) -->
+    <!-- 1. 編集 -->
     <div id="view-scan" class="view active">
         <div id="scan-ui" class="ios-group fade-in-up">
             <div class="ios-group-title">QRコードをスキャン</div>
@@ -374,7 +323,7 @@
             <div class="ios-card" style="margin-top: 16px; padding: 16px;">
                 <label style="font-size: 12px; font-weight: 600; color: var(--ios-subtext); display: block; margin-bottom: 8px;">文字スキャン / 手動入力で開く</label>
                 <div style="display: flex; gap: 10px;">
-                    <input type="text" id="manual-box-id" placeholder="BOX-XXXX (テキスト認識対応)" style="flex: 1;">
+                    <input type="text" id="manual-box-id" placeholder="BOX-XXXX" style="flex: 1;">
                     <button class="btn-secondary" style="width: auto; padding: 0 20px;" onclick="openBoxManual()">開く</button>
                 </div>
             </div>
@@ -457,7 +406,7 @@
         </div>
     </div>
 
-    <!-- 2. 探す (Find) -->
+    <!-- 2. 探す -->
     <div id="view-find" class="view">
         <div class="ios-group">
             <div class="ios-group-title">総合検索</div>
@@ -475,7 +424,7 @@
         </div>
     </div>
 
-    <!-- 3. 一覧 (List) -->
+    <!-- 3. 一覧 -->
     <div id="view-list" class="view">
         <div class="ios-group">
             <div class="ios-group-title">収納アシスタント</div>
@@ -518,7 +467,7 @@
     <!-- 4. 設定 -->
     <div id="view-settings" class="view">
         <div class="ios-group">
-            <div class="ios-group-title">外観設定</div>
+            <div class="ios-group-title">外観・音声設定</div>
             <div class="ios-card">
                 <div class="list-row" onclick="toggleTheme()" style="cursor: pointer;">
                     <div class="list-row-content">
@@ -526,56 +475,53 @@
                     </div>
                     <div id="theme-label" style="color: var(--ios-subtext); font-size:14px;">オフ</div>
                 </div>
-            </div>
-        </div>
-
-        <div class="ios-group">
-            <div class="ios-group-title">データ管理</div>
-            <div class="ios-card">
-                <div class="list-row" onclick="exportCSV()" style="cursor: pointer;">
+                <div class="list-row" onclick="toggleMute()" style="cursor: pointer;">
                     <div class="list-row-content">
-                        <div class="item-title"><span class="material-symbols-rounded">download</span> CSV書き出し</div>
+                        <div class="item-title"><span class="material-symbols-rounded">volume_off</span> 消音モード</div>
                     </div>
-                </div>
-                <div class="list-row" onclick="fetchData(true)" style="cursor: pointer;">
-                    <div class="list-row-content">
-                        <div class="item-title"><span class="material-symbols-rounded">cloud_sync</span> データ強制同期</div>
-                    </div>
+                    <div id="mute-label" style="color: var(--ios-subtext); font-size:14px;">オフ</div>
                 </div>
             </div>
         </div>
 
         <div class="ios-group">
-            <div class="ios-group-title">管理者ツール</div>
+            <div class="ios-group-title">印刷設定</div>
             <div class="ios-card">
-                <div class="list-row" onclick="reCategorizeAll()" style="cursor: pointer;">
+                <div class="list-row" onclick="openLayoutEditor()" style="cursor: pointer;">
                     <div class="list-row-content">
-                        <div class="item-title"><span class="material-symbols-rounded" style="color:var(--ios-orange);">auto_fix_high</span> AI自動整理</div>
+                        <div class="item-title"><span class="material-symbols-rounded">design_services</span> 印刷レイアウト編集</div>
+                        <div class="item-subtitle">用紙サイズ、QR位置などの細かなカスタマイズ</div>
                     </div>
+                    <div style="color: var(--ios-subtext);"><span class="material-symbols-rounded">chevron_right</span></div>
                 </div>
-            </div>
-        </div>
-
-        <div class="ios-group">
-            <div class="ios-group-title">印刷</div>
-            <div class="ios-card">
                 <div class="list-row" onclick="openPrintConfig()" style="cursor: pointer;">
                     <div class="list-row-content">
                         <div class="item-title"><span class="material-symbols-rounded">add_box</span> 新規QRコード一括印刷</div>
                         <div class="item-subtitle">新しい箱用のQRを生成</div>
                     </div>
-                    <div style="color: var(--ios-subtext);">
-                        <span class="material-symbols-rounded">chevron_right</span>
-                    </div>
+                    <div style="color: var(--ios-subtext);"><span class="material-symbols-rounded">chevron_right</span></div>
                 </div>
                 <div class="list-row" onclick="openExistingPrintConfig()" style="cursor: pointer;">
                     <div class="list-row-content">
                         <div class="item-title"><span class="material-symbols-rounded">print</span> 既存の箱を再印刷</div>
                         <div class="item-subtitle">登録済みの箱を選択して印刷</div>
                     </div>
-                    <div style="color: var(--ios-subtext);">
-                        <span class="material-symbols-rounded">chevron_right</span>
-                    </div>
+                    <div style="color: var(--ios-subtext);"><span class="material-symbols-rounded">chevron_right</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="ios-group">
+            <div class="ios-group-title">データ管理・管理者</div>
+            <div class="ios-card">
+                <div class="list-row" onclick="exportCSV()" style="cursor: pointer;">
+                    <div class="list-row-content"><div class="item-title"><span class="material-symbols-rounded">download</span> CSV書き出し</div></div>
+                </div>
+                <div class="list-row" onclick="fetchData(true)" style="cursor: pointer;">
+                    <div class="list-row-content"><div class="item-title"><span class="material-symbols-rounded">cloud_sync</span> データ強制同期</div></div>
+                </div>
+                <div class="list-row" onclick="reCategorizeAll()" style="cursor: pointer;">
+                    <div class="list-row-content"><div class="item-title"><span class="material-symbols-rounded" style="color:var(--ios-orange);">auto_fix_high</span> AI自動整理</div></div>
                 </div>
             </div>
         </div>
@@ -590,7 +536,6 @@
             </div>
         </div>
     </div>
-
 </div>
 
 <!-- ナビゲーション -->
@@ -635,11 +580,110 @@
     </div>
 </div>
 
+<!-- モーダル: 印刷レイアウト編集 -->
+<div id="layout-editor-modal" class="modal">
+    <div class="modal-content" style="max-width: 900px; display: flex; flex-direction: column;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <h3 style="margin:0;">印刷レイアウト編集</h3>
+            <button class="btn-secondary btn-sm" onclick="closeLayoutEditor()">閉じる</button>
+        </div>
+        
+        <!-- ビュー切り替えタブ -->
+        <div class="btn-group" style="margin-bottom: 16px;">
+            <button id="le-tab-single" class="btn-primary btn-sm" onclick="leSwitchView('single')">単体編集</button>
+            <button id="le-tab-a4" class="btn-secondary btn-sm" onclick="leSwitchView('a4')">A4用紙 プレビュー</button>
+        </div>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 16px;">
+            <!-- プレビューエリア -->
+            <div style="flex: 1; min-width: 250px; background: #E5E5EA; border-radius: 12px; position: relative; overflow: auto; display: flex; justify-content: center; align-items: center; padding: 20px;" id="le-preview-container" onmousedown="if(event.target===this)leSelectTarget(null)" ontouchstart="if(event.target===this)leSelectTarget(null)">
+                
+                <!-- 単体キャンバス -->
+                <div id="le-canvas" style="background: white; position: relative; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border: 1px dashed #C6C6C8; flex-shrink: 0;" onmousedown="if(event.target===this)leSelectTarget(null)" ontouchstart="if(event.target===this)leSelectTarget(null)">
+                    <div id="le-id" class="le-item" onmousedown="leStartDrag(event, 'id')" ontouchstart="leStartDrag(event, 'id')">
+                        <div class="le-content">BOX-123</div>
+                        <div class="le-resize" onmousedown="leStartResize(event, 'id')" ontouchstart="leStartResize(event, 'id')"></div>
+                    </div>
+                    <div id="le-qr" class="le-item" onmousedown="leStartDrag(event, 'qr')" ontouchstart="leStartDrag(event, 'qr')">
+                        <div class="le-content" style="background: repeating-linear-gradient(45deg, #eee, #eee 5px, #fff 5px, #fff 10px); color:#888; justify-content:center;">QR</div>
+                        <div class="le-resize" onmousedown="leStartResize(event, 'qr')" ontouchstart="leStartResize(event, 'qr')"></div>
+                    </div>
+                    <div id="le-cat" class="le-item" onmousedown="leStartDrag(event, 'cat')" ontouchstart="leStartDrag(event, 'cat')">
+                        <div class="le-content">📦 カテゴリ</div>
+                        <div class="le-resize" onmousedown="leStartResize(event, 'cat')" ontouchstart="leStartResize(event, 'cat')"></div>
+                    </div>
+                </div>
+                
+                <!-- A4 8枚プレビューキャンバス -->
+                <div id="le-a4-canvas" style="display:none; background: white; box-shadow: 0 4px 10px rgba(0,0,0,0.1); transform-origin: top center; flex-shrink: 0;"></div>
+            </div>
+            
+            <!-- プロパティパネル -->
+            <div style="width: 220px; display: flex; flex-direction: column; gap: 12px; flex-grow: 1;">
+                
+                <!-- プリセットとリセット -->
+                <div style="display: flex; gap: 8px;">
+                    <select id="le-preset-list" style="flex:2; font-size:13px; padding:8px; border-radius:8px; border:1px solid var(--ios-border); background:var(--ios-input-bg);" onchange="leLoadPreset(this.value)">
+                        <option value="">-- プリセット --</option>
+                    </select>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button class="btn-success btn-sm" onclick="leSavePreset()" style="flex:1;"><span class="material-symbols-rounded" style="font-size:16px;">save</span> 保存</button>
+                    <button class="btn-secondary btn-sm" onclick="leResetDefault()" style="flex:1;"><span class="material-symbols-rounded" style="font-size:16px;">refresh</span> 戻す</button>
+                </div>
+
+                <hr style="border:0; border-top:1px solid var(--ios-border); width:100%; margin:4px 0;">
+
+                <label style="font-size:12px; font-weight:bold; color:var(--ios-subtext);">用紙サイズ (1枚あたり)</label>
+                <div style="display: flex; gap: 8px; align-items:center;">
+                    <input type="number" id="le-pw" onchange="leUpdatePaper()" placeholder="幅(mm)" style="padding:8px;">
+                    <span style="color:var(--ios-subtext);">x</span>
+                    <input type="number" id="le-ph" onchange="leUpdatePaper()" placeholder="高(mm)" style="padding:8px;">
+                </div>
+                
+                <hr style="border:0; border-top:1px solid var(--ios-border); width:100%; margin:4px 0;">
+                
+                <!-- プロパティ部分の高さを固定してガタつきを防ぐ -->
+                <div style="height: 200px; display: flex; flex-direction: column;">
+                    <div id="le-props" style="visibility: hidden; display: flex; flex-direction: column; gap: 8px;">
+                        <strong id="le-target-name" style="text-transform:uppercase; font-size:14px; color:var(--ios-blue);">要素</strong>
+                        <div style="display: flex; gap: 8px;">
+                            <div><span style="font-size:11px;color:var(--ios-subtext);">X位置(mm)</span><input type="number" id="le-x" onchange="leApplyProps()" style="padding:8px;"></div>
+                            <div><span style="font-size:11px;color:var(--ios-subtext);">Y位置(mm)</span><input type="number" id="le-y" onchange="leApplyProps()" style="padding:8px;"></div>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <div><span style="font-size:11px;color:var(--ios-subtext);">幅(mm)</span><input type="number" id="le-w" onchange="leApplyProps()" style="padding:8px;"></div>
+                            <div><span style="font-size:11px;color:var(--ios-subtext);">高(mm)</span><input type="number" id="le-h" onchange="leApplyProps()" style="padding:8px;"></div>
+                        </div>
+                        
+                        <div id="le-fs-wrap" style="display: flex; gap: 8px;">
+                            <div style="flex:1;"><span style="font-size:11px;color:var(--ios-subtext);">Font(pt)</span><input type="number" id="le-fs" onchange="leApplyProps()" style="padding:8px;"></div>
+                        </div>
+                        
+                        <div id="le-align-wrap">
+                            <span style="font-size:11px;color:var(--ios-subtext);">文字の配置</span>
+                            <select id="le-align" onchange="leApplyProps()" style="padding:8px; font-size:14px;">
+                                <option value="flex-start">左寄せ</option>
+                                <option value="center">中央</option>
+                                <option value="flex-end">右寄せ</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="margin-top:auto; padding-top:16px;">
+                    <button class="btn-primary" onclick="leSaveLayout()">編集を確定</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- モーダル: 新規印刷設定 -->
 <div id="print-config-modal" class="modal">
     <div class="modal-content">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-            <h3 style="margin:0;">新規印刷設定 (計8枚)</h3>
+            <h3 style="margin:0;">新規印刷設定</h3>
             <button class="btn-secondary btn-sm" onclick="document.getElementById('print-config-modal').style.display='none'">キャンセル</button>
         </div>
         <div id="print-config-list" style="max-height: 50vh; overflow-y: auto; margin-bottom:15px;"></div>
@@ -694,6 +738,7 @@
     let targetHighlightColor = ""; 
     
     let audioCtx = null;
+    let isMuted = localStorage.getItem('sb_mute') === '1';
 
     const CAT_ICONS = {
         "PC・ガジェット": "devices", "衣類・ファッション": "checkroom", "文房具": "edit",
@@ -714,6 +759,7 @@
 
     function initAudio() { const AC = window.AudioContext || window.webkitAudioContext; if (AC) audioCtx = new AC(); }
     function beep() {
+        if(isMuted) return; 
         if(!audioCtx) initAudio();
         if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
         const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
@@ -723,10 +769,8 @@
         osc.start(); osc.stop(audioCtx.currentTime + 0.1);
     }
     
-    // グローバルクリックイベント（効果音とドロップダウンメニューの非表示処理）
     document.addEventListener('click', (e) => { 
         if(e.target.tagName === 'BUTTON' || e.target.closest('button')) beep(); 
-        
         if(!e.target.closest('.dropdown')) {
             document.querySelectorAll('.dropdown-content.show').forEach(el => el.classList.remove('show'));
         }
@@ -745,12 +789,24 @@
         "書類":["契約書","通帳","印鑑","パスポート","年金","保険","証書","説明書", "領収書", "レシート", "明細", "チケット", "診察券", "カード", "名刺", "カタログ", "パンフレット", "取扱説明書", "保証書"]
     };
 
+    // === 印刷レイアウト関連の初期値 (A4ぴったり最適化) ===
+    const defaultLayout = {
+        width: 90, height: 65,
+        id: { x: 5, y: 5, w: 80, h: 10, fontSize: 20, align: 'center' },
+        qr: { x: 30, y: 18, w: 30, h: 30 },
+        cat: { x: 5, y: 50, w: 80, h: 10, fontSize: 12, align: 'center' }
+    };
+    
+    let printLayout = JSON.parse(localStorage.getItem('sb_print_layout')) || JSON.parse(JSON.stringify(defaultLayout));
+    let printPresets = JSON.parse(localStorage.getItem('sb_print_presets')) || {};
+
     window.onload = () => {
         initAudio();
         if(localStorage.getItem('sb_dark')==='1') document.body.classList.add('dark-mode');
         updateThemeLabel();
+        updateMuteLabel();
+        updatePresetList();
         
-        // URLパラメータの取得
         const urlParams = new URLSearchParams(window.location.search);
         pendingBoxParam = urlParams.get('box');
         
@@ -770,6 +826,9 @@
 
     function toggleTheme() { document.body.classList.toggle('dark-mode'); localStorage.setItem('sb_dark', document.body.classList.contains('dark-mode')?'1':'0'); updateThemeLabel(); }
     function updateThemeLabel() { document.getElementById('theme-label').innerText = document.body.classList.contains('dark-mode') ? 'オン' : 'オフ'; }
+    
+    function toggleMute() { isMuted = !isMuted; localStorage.setItem('sb_mute', isMuted ? '1' : '0'); updateMuteLabel(); }
+    function updateMuteLabel() { document.getElementById('mute-label').innerText = isMuted ? 'オン' : 'オフ'; }
 
     function exportCSV() {
         if(Object.keys(localDB).length === 0) { alert("データがありません"); return; }
@@ -811,13 +870,9 @@
             if(json.error) { alert("認証エラー"); logout(); return; }
             localDB = json; document.getElementById('sync-status').innerText = "Ready";
             
-            if(pendingBoxParam) {
-                handlePendingBox();
-            } else if(force) { 
-                alert("同期完了"); renderList(); 
-            } else {
-                renderList();
-            }
+            if(pendingBoxParam) handlePendingBox();
+            else if(force) { alert("同期完了"); renderList(); }
+            else renderList();
         } catch(e){ document.getElementById('sync-status').innerText = "Error"; }
     }
     
@@ -857,22 +912,39 @@
 
     function forceStartQR() { document.getElementById('pc-camera-trigger').style.display = 'none'; document.getElementById('reader').classList.add('active'); startQR(); }
     
-    function startQR() {
-        if(currentBoxId || qrScanner) return;
+    let qrState = 'stopped';
+    async function startQR() {
+        if(currentBoxId || qrState !== 'stopped') return;
+        qrState = 'starting';
         const r = document.getElementById("reader");
         if(r && r.offsetParent!==null) {
-            const sc = new Html5Qrcode("reader");
-            sc.start({facingMode:"environment"},{fps:10,qrbox:250},(t)=>{ 
-                beep(); 
-                handleScan(t); 
-            })
-            .then(()=>{qrScanner=sc}).catch(()=>{ if(window.innerWidth<768) setTimeout(startQR,500); });
+            try {
+                const sc = new Html5Qrcode("reader");
+                await sc.start({facingMode:"environment"},{fps:10,qrbox:250},(t)=>{ 
+                    if(qrState === 'started') { beep(); handleScan(t); }
+                });
+                if (qrState === 'stopping') {
+                    await sc.stop(); sc.clear(); qrState = 'stopped';
+                } else {
+                    qrScanner = sc; qrState = 'started';
+                }
+            } catch(e) {
+                qrState = 'stopped';
+                if(window.innerWidth<768) setTimeout(startQR,500);
+            }
+        } else {
+            qrState = 'stopped';
         }
     }
     
-    function stopQR() { if(qrScanner) qrScanner.stop().then(()=>{qrScanner.clear();qrScanner=null}).catch(()=>{qrScanner=null}); }
+    async function stopQR() { 
+        if(qrScanner && (qrState === 'started' || qrState === 'starting')) {
+            qrState = 'stopping';
+            try { await qrScanner.stop(); qrScanner.clear(); } catch(e) {}
+            qrScanner = null; qrState = 'stopped';
+        }
+    }
 
-    // スキャンされたテキスト(URL)の処理
     function handleScan(t) {
         let id = t;
         try {
@@ -885,7 +957,6 @@
         openBox(id);
     }
     
-    // 手動入力・テキスト認識
     function openBoxManual() {
         let id = document.getElementById('manual-box-id').value.trim().toUpperCase();
         if(id) {
@@ -909,15 +980,12 @@
     }
     
     function jumpToBox(boxId, itemName, color = 'yellow') {
-        targetHighlightItems = itemName ? [itemName] :[]; 
-        targetHighlightColor = color;
-        tab('scan', true); 
-        openBox(boxId);
+        targetHighlightItems = itemName ? [itemName] :[]; targetHighlightColor = color;
+        tab('scan', true); openBox(boxId);
     }
 
-    // ハンバーガーメニュー切り替え
     function toggleMenu(e, i) {
-        e.stopPropagation(); // グローバルクリックでの即時閉じを防止
+        e.stopPropagation(); 
         document.querySelectorAll('.dropdown-content.show').forEach(el => {
             if(el.id !== `menu-${i}`) el.classList.remove('show');
         });
@@ -951,11 +1019,8 @@
 
             const shouldHighlight = targetHighlightItems.some(hi => item.n.toLowerCase().includes(hi.toLowerCase()));
             if(shouldHighlight) {
-                if (targetHighlightColor === 'blue') {
-                    row.classList.add('highlight-blue');
-                } else {
-                    row.classList.add('highlight-yellow');
-                }
+                if (targetHighlightColor === 'blue') row.classList.add('highlight-blue');
+                else row.classList.add('highlight-yellow');
                 setTimeout(() => row.scrollIntoView({behavior: "smooth", block: "center"}), 300);
             }
             
@@ -984,20 +1049,12 @@
         });
     }
 
-    function toggleStatus(i, status) {
-        localDB[currentBoxId].items[i].s = status;
-        saveBox();
-        renderBoxUI();
-    }
+    function toggleStatus(i, status) { localDB[currentBoxId].items[i].s = status; saveBox(); renderBoxUI(); }
     
     function editItem(i) {
         const itm = localDB[currentBoxId].items[i];
         const newName = prompt("アイテム名を変更", itm.n);
-        if(newName !== null && newName.trim() !== "") {
-            itm.n = newName.trim();
-            saveBox();
-            renderBoxUI();
-        }
+        if(newName !== null && newName.trim() !== "") { itm.n = newName.trim(); saveBox(); renderBoxUI(); }
     }
 
     function checkExistingDuplicates(items) {
@@ -1042,16 +1099,12 @@
             Object.keys(DICT).forEach(cat => {
                 DICT[cat].forEach(w => {
                     const wl = w.toLowerCase();
-                    if(txt.includes(wl)) {
-                        scores[cat] = (scores[cat] || 0) + (wl.length); 
-                    }
+                    if(txt.includes(wl)) scores[cat] = (scores[cat] || 0) + (wl.length); 
                 });
             });
         });
         let max = 0, best = "未分類"; 
-        Object.keys(scores).forEach(c => { 
-            if(scores[c] > max) { max = scores[c]; best = c; } 
-        });
+        Object.keys(scores).forEach(c => { if(scores[c] > max) { max = scores[c]; best = c; } });
         return best;
     }
 
@@ -1100,15 +1153,13 @@
         document.getElementById('move-modal').style.display='flex';
     }
 
-    // --- まとめて移動 ---
     function openBatchMove() {
         const d = localDB[currentBoxId];
         if(!d.items.length) { alert("移動するアイテムがありません"); return; }
         
         const iList = document.getElementById('batch-item-list'); iList.innerHTML = "";
         d.items.forEach((item, i) => {
-            const div = document.createElement('div');
-            div.className = "fade-in-up";
+            const div = document.createElement('div'); div.className = "fade-in-up";
             div.style.padding="8px"; div.style.borderBottom="1px solid var(--ios-border)";
             div.innerHTML = `<label style="display:flex;align-items:center;gap:10px;"><input type="checkbox" value="${i}" class="batch-check" style="width:20px;height:20px;margin:0;"> ${item.n}</label>`;
             iList.appendChild(div);
@@ -1116,10 +1167,8 @@
 
         const bList = document.getElementById('batch-box-list'); bList.innerHTML = "";
         Object.keys(localDB).forEach(bid => {
-            if(bid === currentBoxId) return;
-            const b = localDB[bid];
-            const div = document.createElement('div');
-            div.className = "list-row fade-in-up"; div.style.cursor="pointer";
+            if(bid === currentBoxId) return; const b = localDB[bid];
+            const div = document.createElement('div'); div.className = "list-row fade-in-up"; div.style.cursor="pointer";
             div.innerHTML = `<label style="display:flex;align-items:center;gap:10px;width:100%;cursor:pointer;"><input type="radio" name="batch-target-box" value="${bid}" style="width:20px;height:20px;margin:0;"> <div><div style="font-weight:bold;">${bid}</div><div style="font-size:12px;color:#888;">${b.category} @${b.loc}</div></div></label>`;
             bList.appendChild(div);
         });
@@ -1141,15 +1190,10 @@
         if(!radio) { alert("移動先のボックスを選択してください"); return; }
         const targetBid = radio.value;
 
-        indices.forEach(idx => {
-            localDB[targetBid].items.push(localDB[currentBoxId].items[idx]);
-            localDB[currentBoxId].items.splice(idx, 1);
-        });
+        indices.forEach(idx => { localDB[targetBid].items.push(localDB[currentBoxId].items[idx]); localDB[currentBoxId].items.splice(idx, 1); });
 
-        const d1 = localDB[currentBoxId];
-        pushData({ action:'save', boxId:currentBoxId, location:d1.loc, items:d1.items, category:d1.category });
-        const d2 = localDB[targetBid];
-        pushData({ action:'save', boxId:targetBid, location:d2.loc, items:d2.items, category:d2.category });
+        const d1 = localDB[currentBoxId]; pushData({ action:'save', boxId:currentBoxId, location:d1.loc, items:d1.items, category:d1.category });
+        const d2 = localDB[targetBid]; pushData({ action:'save', boxId:targetBid, location:d2.loc, items:d2.items, category:d2.category });
 
         alert(`${indices.length}個のアイテムを移動しました`);
         document.getElementById('batch-move-modal').style.display='none';
@@ -1162,28 +1206,23 @@
         return parts.map(part => part.toLowerCase() === keyword.toLowerCase() ? `<span class="hl">${part}</span>` : part).join('');
     }
 
-    // --- 総合検索 (キーワードのみ) ---
     function findSuggestion() {
         const key = document.getElementById('suggest-input').value.trim().toLowerCase();
         const res = document.getElementById('suggest-res');
         res.innerHTML = ""; if(!key) return;
         let found = false;
-        
         const terms = key.split(/\s+/).filter(t => t);
         
         Object.keys(localDB).forEach(id => {
             const d = localDB[id]; 
             const rawTxt = `${id} ${d.loc} ${d.category} ${d.items.map(i=>i.n).join(" ")}`.toLowerCase();
-            
             if(terms.every(t => rawTxt.includes(t))) {
                 found = true; 
                 const div = document.createElement('div'); div.className = "list-row fade-in-up";
                 let itemsHtml = d.items.map(i => {
                      let name = i.n; let isMatch = false;
                      terms.forEach(t => { if(t && name.toLowerCase().includes(t)) { name = highlightText(name, t); isMatch = true; } });
-                     const stBadge = getStatusBadge(i.s || 0);
-                     const finalName = name + " " + stBadge;
-                     return isMatch ? `<span class="item-match" style="color:var(--ios-orange);">${finalName}</span>` : finalName;
+                     const stBadge = getStatusBadge(i.s || 0); return isMatch ? `<span class="item-match" style="color:var(--ios-orange);">${name} ${stBadge}</span>` : `${name} ${stBadge}`;
                 }).join(", ");
                 div.innerHTML = `
                     <div class="list-row-content" onclick="jumpToBox('${id}', '${terms[0]}', 'yellow')" style="cursor:pointer;">
@@ -1194,44 +1233,26 @@
                 res.appendChild(div);
             }
         });
-        
         if(!found) res.innerHTML = "<div style='text-align:center;color:var(--ios-subtext);padding:10px;' class='fade-in-up'>見つかりませんでした</div>";
     }
 
-    // --- 収納提案 (進化版) ---
     function findPlacement() {
         const key = document.getElementById('placement-input').value.trim().toLowerCase();
         const res = document.getElementById('placement-res');
         if(!key) { res.style.display='none'; return; }
         res.style.display='block';
         
-        let words = [key]; 
-        let targetCat = "未分類";
-        Object.keys(DICT).forEach(c => { 
-            if(DICT[c].some(w=>key.includes(w) || w.includes(key))) { 
-                words = words.concat(DICT[c]); 
-                targetCat = c; 
-            }
-        });
+        let words = [key]; let targetCat = "未分類";
+        Object.keys(DICT).forEach(c => { if(DICT[c].some(w=>key.includes(w) || w.includes(key))) { words = words.concat(DICT[c]); targetCat = c; }});
         
         let hits =[];
         Object.keys(localDB).forEach(id => {
-            const b = localDB[id]; 
-            let score = 0;
-            let exactItemMatch = false;
-            
-            if(b.items.some(i => i.n.toLowerCase().includes(key) || key.includes(i.n.toLowerCase()))) {
-                score += 100;
-                exactItemMatch = true;
-            }
-            
+            const b = localDB[id]; let score = 0; let exactItemMatch = false;
+            if(b.items.some(i => i.n.toLowerCase().includes(key) || key.includes(i.n.toLowerCase()))) { score += 100; exactItemMatch = true; }
             if(b.category === targetCat && targetCat !== "未分類") score += 20;
-            
             const content = b.items.map(i=>i.n.toLowerCase()).join(" ");
             words.forEach(w => { if(content.includes(w)) score += 5; });
-            
             score -= (b.items.length * 0.5);
-            
             if(score > 0) hits.push({id, loc:b.loc, cat:b.category, score, exact: exactItemMatch});
         });
         hits.sort((a,b)=>b.score-a.score);
@@ -1242,9 +1263,7 @@
                 let exactBadge = h.exact ? `<span class="tag-badge" style="background:var(--ios-orange);color:white;">同種あり</span>` : "";
                 return `・<span class="jump-link" onclick="tab('scan', true);openBox('${h.id}')">${h.id}</span> (${h.cat}) @${h.loc} ${exactBadge}`;
             }).join("<br>");
-        } else {
-            msg += "新しい箱か、空いている箱を使いましょう。";
-        }
+        } else { msg += "新しい箱か、空いている箱を使いましょう。"; }
         res.innerHTML = msg;
     }
 
@@ -1308,29 +1327,340 @@
     }
     function stopFastMode() { if(aiStream) aiStream.getTracks().forEach(t=>t.stop()); if(recognition) recognition.stop(); aiStream=null; recognition=null; document.getElementById('fast-mode-ui').style.display='none'; saveBox(); renderBoxUI(); }
 
-    // --- 印刷機能 ---
+    // === 印刷レイアウトカスタマイズ (直感操作) ===
+    let LE_SCALE = 3.8; // mm -> px のスケール
+    let currentLeTarget = null;
+    let leIsDragging = false, leIsResizing = false;
+    let leStartX, leStartY, leOrigX, leOrigY, leOrigW, leOrigH;
+
+    function px2mm(px) { return px / LE_SCALE; }
+    function mm2px(mm) { return mm * LE_SCALE; }
+    function pt2px(pt) { return pt * (25.4 / 72) * LE_SCALE; } // フォントサイズ(pt)をpxに変換してプレビュー表示を正確にする
+
+    function openLayoutEditor() {
+        renderLeCanvas();
+        document.getElementById('layout-editor-modal').style.display = 'flex';
+    }
+    function closeLayoutEditor() { document.getElementById('layout-editor-modal').style.display = 'none'; }
+    
+    // タブ切り替え
+    function leSwitchView(mode) {
+        const sc = document.getElementById('le-canvas');
+        const a4 = document.getElementById('le-a4-canvas');
+        const tbSingle = document.getElementById('le-tab-single');
+        const tbA4 = document.getElementById('le-tab-a4');
+        
+        if(mode === 'single') {
+            sc.style.display = 'block'; a4.style.display = 'none';
+            tbSingle.className = 'btn-primary btn-sm'; tbA4.className = 'btn-secondary btn-sm';
+        } else {
+            sc.style.display = 'none'; a4.style.display = 'flex';
+            tbSingle.className = 'btn-secondary btn-sm'; tbA4.className = 'btn-primary btn-sm';
+            leRenderA4Preview();
+        }
+    }
+
+    function renderLeCanvas() {
+        document.getElementById('le-pw').value = printLayout.width;
+        document.getElementById('le-ph').value = printLayout.height;
+        
+        const cvs = document.getElementById('le-canvas');
+        cvs.style.width = mm2px(printLayout.width) + 'px';
+        cvs.style.height = mm2px(printLayout.height) + 'px';
+        
+        ['id', 'qr', 'cat'].forEach(key => {
+            const el = document.getElementById('le-' + key);
+            const data = printLayout[key];
+            el.style.left = mm2px(data.x) + 'px';
+            el.style.top = mm2px(data.y) + 'px';
+            el.style.width = mm2px(data.w) + 'px';
+            el.style.height = mm2px(data.h) + 'px';
+            if(data.fontSize !== undefined) {
+                const content = el.querySelector('.le-content');
+                content.style.fontSize = pt2px(data.fontSize) + 'px';
+                content.style.justifyContent = data.align || 'center';
+            }
+        });
+        
+        leSelectTarget(currentLeTarget); 
+        
+        if(document.getElementById('le-a4-canvas').style.display !== 'none') {
+            leRenderA4Preview();
+        }
+    }
+    
+    // A4プレビュー生成 (印刷時と同じ flex gap/padding 条件を適用)
+    function leRenderA4Preview() {
+        const container = document.getElementById('le-a4-canvas');
+        container.innerHTML = '';
+        
+        // コンテナの幅から適正なスケールを計算して縮小表示
+        const parentW = document.getElementById('le-preview-container').clientWidth - 40; 
+        const parentH = window.innerHeight * 0.5; 
+        const scale = Math.min( parentW / (210 * LE_SCALE), parentH / (297 * LE_SCALE) );
+        
+        container.style.width = (210 * LE_SCALE) + 'px';
+        container.style.height = (297 * LE_SCALE) + 'px';
+        container.style.padding = (5 * LE_SCALE) + 'px';
+        container.style.gap = (4 * LE_SCALE) + 'px';
+        container.style.display = 'flex';
+        container.style.flexWrap = 'wrap';
+        container.style.alignContent = 'flex-start';
+        container.style.justifyContent = 'center';
+        container.style.boxSizing = 'border-box';
+        container.style.transform = `scale(${scale})`;
+        
+        for(let i=0; i<8; i++) {
+            const card = document.createElement('div');
+            card.style.width = (printLayout.width * LE_SCALE) + 'px';
+            card.style.height = (printLayout.height * LE_SCALE) + 'px';
+            card.style.position = 'relative';
+            card.style.border = '1px dashed #333';
+            card.style.boxSizing = 'border-box';
+            card.style.overflow = 'hidden';
+            card.style.flexShrink = '0';
+            
+            // BOX-ID
+            const idEl = document.createElement('div');
+            idEl.style.position = 'absolute';
+            idEl.style.left = (printLayout.id.x * LE_SCALE) + 'px';
+            idEl.style.top = (printLayout.id.y * LE_SCALE) + 'px';
+            idEl.style.width = (printLayout.id.w * LE_SCALE) + 'px';
+            idEl.style.height = (printLayout.id.h * LE_SCALE) + 'px';
+            idEl.style.fontSize = pt2px(printLayout.id.fontSize) + 'px';
+            idEl.style.fontWeight = '900';
+            idEl.style.display = 'flex'; idEl.style.alignItems = 'center';
+            idEl.style.justifyContent = printLayout.id.align || 'center';
+            idEl.style.color = 'black';
+            idEl.innerText = 'BOX-00' + (i+1);
+            card.appendChild(idEl);
+
+            // QR
+            const qrEl = document.createElement('div');
+            qrEl.style.position = 'absolute';
+            qrEl.style.left = (printLayout.qr.x * LE_SCALE) + 'px';
+            qrEl.style.top = (printLayout.qr.y * LE_SCALE) + 'px';
+            qrEl.style.width = (printLayout.qr.w * LE_SCALE) + 'px';
+            qrEl.style.height = (printLayout.qr.h * LE_SCALE) + 'px';
+            qrEl.style.background = 'repeating-linear-gradient(45deg, #eee, #eee 5px, #fff 5px, #fff 10px)';
+            qrEl.style.display = 'flex'; qrEl.style.alignItems = 'center'; qrEl.style.justifyContent = 'center';
+            qrEl.style.color = '#888';
+            qrEl.innerText = 'QR';
+            card.appendChild(qrEl);
+
+            // CATEGORY
+            const catEl = document.createElement('div');
+            catEl.style.position = 'absolute';
+            catEl.style.left = (printLayout.cat.x * LE_SCALE) + 'px';
+            catEl.style.top = (printLayout.cat.y * LE_SCALE) + 'px';
+            catEl.style.width = (printLayout.cat.w * LE_SCALE) + 'px';
+            catEl.style.height = (printLayout.cat.h * LE_SCALE) + 'px';
+            catEl.style.fontSize = pt2px(printLayout.cat.fontSize) + 'px';
+            catEl.style.fontWeight = 'bold';
+            catEl.style.display = 'flex'; catEl.style.alignItems = 'center';
+            catEl.style.justifyContent = printLayout.cat.align || 'center';
+            catEl.style.border = '1px solid #333'; catEl.style.borderRadius = '20px';
+            catEl.style.color = 'black';
+            catEl.innerText = '📦 カテゴリ';
+            card.appendChild(catEl);
+
+            container.appendChild(card);
+        }
+    }
+
+    // プリセット関連
+    function updatePresetList() {
+        const sel = document.getElementById('le-preset-list');
+        sel.innerHTML = '<option value="">-- プリセット --</option>';
+        Object.keys(printPresets).forEach(k => {
+            const opt = document.createElement('option');
+            opt.value = k; opt.innerText = k;
+            sel.appendChild(opt);
+        });
+    }
+
+    function leSavePreset() {
+        const name = prompt('保存するプリセット名を入力してください\n(既存の同名プリセットは上書きされます)');
+        if(!name || name.trim() === '') return;
+        printPresets[name.trim()] = JSON.parse(JSON.stringify(printLayout));
+        localStorage.setItem('sb_print_presets', JSON.stringify(printPresets));
+        updatePresetList();
+        document.getElementById('le-preset-list').value = name.trim();
+        alert('プリセットを保存しました');
+    }
+
+    function leLoadPreset(name) {
+        if(!name || !printPresets[name]) return;
+        printLayout = JSON.parse(JSON.stringify(printPresets[name]));
+        renderLeCanvas();
+        leSelectTarget(null);
+    }
+    
+    function leResetDefault() {
+        if(confirm('レイアウトを初期設定に戻しますか？')) {
+            printLayout = JSON.parse(JSON.stringify(defaultLayout));
+            document.getElementById('le-preset-list').value = "";
+            renderLeCanvas();
+            leSelectTarget(null);
+        }
+    }
+
+    function leSelectTarget(target) {
+        document.querySelectorAll('.le-item').forEach(el => el.classList.remove('selected'));
+        currentLeTarget = target;
+        const props = document.getElementById('le-props');
+        if(target) {
+            document.getElementById('le-' + target).classList.add('selected');
+            props.style.visibility = 'visible';
+            document.getElementById('le-target-name').innerText = target === 'id' ? 'BOX番号' : (target === 'qr' ? 'QRコード' : 'カテゴリ');
+            const data = printLayout[target];
+            document.getElementById('le-x').value = Math.round(data.x);
+            document.getElementById('le-y').value = Math.round(data.y);
+            document.getElementById('le-w').value = Math.round(data.w);
+            document.getElementById('le-h').value = Math.round(data.h);
+            if(data.fontSize !== undefined) {
+                document.getElementById('le-fs-wrap').style.visibility = 'visible';
+                document.getElementById('le-align-wrap').style.visibility = 'visible';
+                document.getElementById('le-fs').value = data.fontSize;
+                document.getElementById('le-align').value = data.align || 'center';
+            } else {
+                document.getElementById('le-fs-wrap').style.visibility = 'hidden';
+                document.getElementById('le-align-wrap').style.visibility = 'hidden';
+            }
+        } else {
+            props.style.visibility = 'hidden';
+        }
+    }
+
+    function leGetClientXY(e) {
+        if(e.touches && e.touches.length > 0) return {x: e.touches[0].clientX, y: e.touches[0].clientY};
+        return {x: e.clientX, y: e.clientY};
+    }
+
+    function leStartDrag(e, target) {
+        if(e.target.classList.contains('le-resize')) return;
+        e.preventDefault(); e.stopPropagation();
+        leSelectTarget(target); leIsDragging = true;
+        const pt = leGetClientXY(e);
+        leStartX = pt.x; leStartY = pt.y;
+        leOrigX = printLayout[target].x; leOrigY = printLayout[target].y;
+        document.addEventListener('mousemove', leOnDrag); document.addEventListener('mouseup', leStopDrag);
+        document.addEventListener('touchmove', leOnDrag, {passive: false}); document.addEventListener('touchend', leStopDrag);
+    }
+
+    function leOnDrag(e) {
+        if(!leIsDragging) return; e.preventDefault();
+        const pt = leGetClientXY(e);
+        printLayout[currentLeTarget].x = leOrigX + px2mm(pt.x - leStartX);
+        printLayout[currentLeTarget].y = leOrigY + px2mm(pt.y - leStartY);
+        renderLeCanvas();
+    }
+
+    function leStopDrag() {
+        leIsDragging = false;
+        document.removeEventListener('mousemove', leOnDrag); document.removeEventListener('mouseup', leStopDrag);
+        document.removeEventListener('touchmove', leOnDrag); document.removeEventListener('touchend', leStopDrag);
+    }
+
+    function leStartResize(e, target) {
+        e.preventDefault(); e.stopPropagation();
+        leSelectTarget(target); leIsResizing = true;
+        const pt = leGetClientXY(e);
+        leStartX = pt.x; leStartY = pt.y;
+        leOrigW = printLayout[target].w; leOrigH = printLayout[target].h;
+        document.addEventListener('mousemove', leOnResize); document.addEventListener('mouseup', leStopResize);
+        document.addEventListener('touchmove', leOnResize, {passive: false}); document.addEventListener('touchend', leStopResize);
+    }
+
+    function leOnResize(e) {
+        if(!leIsResizing) return; e.preventDefault();
+        const pt = leGetClientXY(e);
+        let newW = Math.max(5, leOrigW + px2mm(pt.x - leStartX));
+        let newH = Math.max(5, leOrigH + px2mm(pt.y - leStartY));
+        
+        if(currentLeTarget === 'qr') {
+            const size = Math.max(newW, newH);
+            newW = size; newH = size;
+        }
+        
+        printLayout[currentLeTarget].w = newW;
+        printLayout[currentLeTarget].h = newH;
+        renderLeCanvas();
+    }
+
+    function leStopResize() {
+        leIsResizing = false;
+        document.removeEventListener('mousemove', leOnResize); document.removeEventListener('mouseup', leStopResize);
+        document.removeEventListener('touchmove', leOnResize); document.removeEventListener('touchend', leStopResize);
+    }
+
+    function leApplyProps() {
+        if(!currentLeTarget) return;
+        const data = printLayout[currentLeTarget];
+        data.x = parseFloat(document.getElementById('le-x').value) || 0;
+        data.y = parseFloat(document.getElementById('le-y').value) || 0;
+        data.w = parseFloat(document.getElementById('le-w').value) || 10;
+        data.h = parseFloat(document.getElementById('le-h').value) || 10;
+        
+        if(currentLeTarget === 'qr') {
+            data.h = data.w; // 正方形維持
+            document.getElementById('le-h').value = data.w;
+        }
+        
+        if(data.fontSize !== undefined) {
+            data.fontSize = parseFloat(document.getElementById('le-fs').value) || 12;
+            data.align = document.getElementById('le-align').value || 'center';
+        }
+        renderLeCanvas();
+    }
+
+    function leUpdatePaper() {
+        printLayout.width = parseFloat(document.getElementById('le-pw').value) || 90;
+        printLayout.height = parseFloat(document.getElementById('le-ph').value) || 65;
+        renderLeCanvas();
+    }
+
+    function leSaveLayout() {
+        localStorage.setItem('sb_print_layout', JSON.stringify(printLayout));
+        closeLayoutEditor();
+    }
+
+    // === 印刷実行処理 ===
     function getQRText(boxId) { return `${APP_URL}?box=${boxId}`; }
 
-    // (単体印刷)
+    function generatePrintCardHTML(boxId, cat, idSuffix) {
+        const L = printLayout;
+        const cardStyle = `position: relative; width: ${L.width}mm; height: ${L.height}mm; border: 1px dashed #333; box-sizing: border-box; page-break-inside: avoid; break-inside: avoid; overflow: hidden; background: white; flex-shrink: 0;`;
+        const idStyle = `position: absolute; left: ${L.id.x}mm; top: ${L.id.y}mm; width: ${L.id.w}mm; height: ${L.id.h}mm; font-size: ${L.id.fontSize}pt; font-weight: 900; display: flex; align-items: center; justify-content: ${L.id.align || 'center'}; overflow: hidden; color: black !important;`;
+        const qrStyle = `position: absolute; left: ${L.qr.x}mm; top: ${L.qr.y}mm; width: ${L.qr.w}mm; height: ${L.qr.h}mm;`;
+        const catStyle = `position: absolute; left: ${L.cat.x}mm; top: ${L.cat.y}mm; width: ${L.cat.w}mm; height: ${L.cat.h}mm; font-size: ${L.cat.fontSize}pt; font-weight: bold; display: flex; align-items: center; justify-content: ${L.cat.align || 'center'}; border: 1px solid #333; border-radius: 20mm; overflow: hidden; background: white; color: black !important;`;
+
+        return `
+            <div style="${cardStyle}">
+                <div style="${idStyle}">${boxId}</div>
+                <div style="${catStyle}">${getCatIcon(cat)} <span style="margin-left:4px">${cat}</span></div>
+                <div id="pq${idSuffix}" style="${qrStyle}" class="qr-container"></div>
+            </div>`;
+    }
+
+    function renderQR(boxId, idSuffix) {
+        new QRCode(document.getElementById(`pq${idSuffix}`), {text: getQRText(boxId), width: 512, height: 512});
+    }
+
     function printQR() {
         const a=document.getElementById('print-area'); 
-        a.style.display='flex'; 
-        a.className='mode-single';
-        a.innerHTML=`<div class="print-card"><div class="print-id">${currentBoxId}</div><div class="print-cat">${getCatIcon(localDB[currentBoxId].category)} ${localDB[currentBoxId].category}</div><div id="pq"></div></div>`;
-        
-        new QRCode(document.getElementById("pq"),{text:getQRText(currentBoxId),width:128,height:128});
-        
+        a.style.display='flex';
+        a.innerHTML = generatePrintCardHTML(currentBoxId, localDB[currentBoxId].category, "-single");
+        renderQR(currentBoxId, "-single");
         setTimeout(()=>{ window.print(); }, 800);
     }
 
-    // (新規一括)
     function openPrintConfig() {
         const list = document.getElementById('print-config-list'); list.innerHTML = "";
         Object.keys(CAT_ICONS).forEach(cat => {
-            const div = document.createElement('div');
-            div.className = "fade-in-up";
+            const div = document.createElement('div'); div.className = "fade-in-up";
             div.style.display = "flex"; div.style.justifyContent = "space-between"; div.style.alignItems = "center"; div.style.padding = "8px"; div.style.borderBottom = "1px solid var(--ios-border)";
-            div.innerHTML = `<span>${getCatIcon(cat)} ${cat}</span><input type="number" min="0" max="8" value="0" class="print-count-input" data-cat="${cat}" style="width:60px; text-align:center;" onchange="updatePrintTotal()">`;
+            div.innerHTML = `<span>${getCatIcon(cat)} ${cat}</span><input type="number" min="0" value="0" class="print-count-input" data-cat="${cat}" style="width:60px; text-align:center;" onchange="updatePrintTotal()">`;
             list.appendChild(div);
         });
         updatePrintTotal(); document.getElementById('print-config-modal').style.display='flex';
@@ -1338,53 +1668,43 @@
 
     function updatePrintTotal() {
         let total = 0; document.querySelectorAll('.print-count-input').forEach(inp => total += parseInt(inp.value||0));
-        const el = document.getElementById('print-total-count'); el.innerText = `合計: ${total}枚 (残り${8-total}枚)`;
-        el.style.color = total > 8 ? "red" : "black";
+        document.getElementById('print-total-count').innerText = `合計: ${total}枚`;
     }
 
     function execBulkPrint() {
         let total = 0; const requests =[];
         document.querySelectorAll('.print-count-input').forEach(inp => {
-            const count = parseInt(inp.value||0);
-            const cat = inp.dataset.cat;
+            const count = parseInt(inp.value||0); const cat = inp.dataset.cat;
             for(let i=0; i<count; i++) requests.push(cat);
             total += count;
         });
-        if(total > 8) { alert("合計8枚以内にしてください"); return; }
-        if(total === 0) { for(let i=0; i<8; i++) requests.push("未分類"); }
-        while(requests.length < 8) requests.push("未分類");
+        if(total === 0) return;
 
         document.getElementById('print-config-modal').style.display='none';
-        const a=document.getElementById('print-area'); 
-        a.style.display='grid'; 
-        a.className='mode-bulk'; 
-        a.innerHTML="";
+        const a = document.getElementById('print-area'); 
+        a.style.display = 'flex'; a.innerHTML = "";
         
+        const tasks =[];
         requests.forEach((cat, i) => {
             let id='BOX-'+Math.floor(1000+Math.random()*9000);
             while(localDB[id]) id='BOX-'+Math.floor(1000+Math.random()*9000);
             
             localDB[id] = { loc:"", items:[], category:cat, updated: new Date() };
-            
-            const d=document.createElement('div'); d.className='print-card';
-            d.innerHTML=`<div class="print-id">${id}</div><div class="print-cat">${getCatIcon(cat)} ${cat}</div><div id="pq${i}"></div>`;
-            a.appendChild(d);
-            new QRCode(document.getElementById(`pq${i}`),{text:getQRText(id),width:128,height:128});
-            
             pushData({ action:'save', boxId:id, location:"", items:[], category:cat });
+            
+            tasks.push({id: id, i: i});
+            a.innerHTML += generatePrintCardHTML(id, cat, i);
         });
         
+        tasks.forEach(t => renderQR(t.id, t.i));
         setTimeout(()=>{ window.print(); }, 1500);
     }
 
-    // (既存一括)
     function openExistingPrintConfig() {
-        const list = document.getElementById('existing-print-list');
-        list.innerHTML = "";
+        const list = document.getElementById('existing-print-list'); list.innerHTML = "";
         Object.keys(localDB).forEach(bid => {
             const b = localDB[bid];
-            const div = document.createElement('div');
-            div.className = "fade-in-up";
+            const div = document.createElement('div'); div.className = "fade-in-up";
             div.style.padding="8px"; div.style.borderBottom="1px solid var(--ios-border)";
             div.innerHTML = `<label style="display:flex;align-items:center;gap:10px;">
                 <input type="checkbox" value="${bid}" class="existing-print-check" style="width:20px;height:20px;margin:0;" onchange="updateExistingPrintCount()"> 
@@ -1410,29 +1730,26 @@
 
     function execExistingBulkPrint() {
         const checks = document.querySelectorAll('.existing-print-check:checked');
-        if (checks.length === 0) { alert("箱を選択してください"); return; }
+        if (checks.length === 0) return;
         
         document.getElementById('existing-print-modal').style.display='none';
         const a = document.getElementById('print-area'); 
-        a.style.display = 'grid'; 
-        a.className = 'mode-bulk'; 
-        a.innerHTML = "";
+        a.style.display = 'flex'; a.innerHTML = "";
         
+        const tasks =[];
         Array.from(checks).forEach((c, i) => {
-            const bid = c.value;
-            const b = localDB[bid];
-            const d = document.createElement('div'); d.className = 'print-card';
-            d.innerHTML = `<div class="print-id">${bid}</div><div class="print-cat">${getCatIcon(b.category)} ${b.category}</div><div id="pq-ex${i}"></div>`;
-            a.appendChild(d);
-            new QRCode(document.getElementById(`pq-ex${i}`), {text:getQRText(bid), width:128, height:128});
+            const bid = c.value; const b = localDB[bid];
+            tasks.push({id: bid, i: "-ex"+i});
+            a.innerHTML += generatePrintCardHTML(bid, b.category, "-ex"+i);
         });
         
+        tasks.forEach(t => renderQR(t.id, t.i));
         setTimeout(() => { window.print(); }, 1500);
     }
 
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', function() {
-            navigator.serviceWorker.register('./sw.js').then(function(registration) {
+            navigator.serviceWorker.register('./sw.js').then(function() {
                 console.log('ServiceWorker registration successful');
             }).catch(function(err) {});
         });
